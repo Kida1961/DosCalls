@@ -1,0 +1,125 @@
+SUBTTL  MISC.MAC -- DosCalls : Misc part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_MISC
+IFNDEF  @@MISC@@
+%OUT    MISC.MAC
+
+@DosSetIntVect  MACRO   @intType, @vect ; Function 25H
+                MOV     AX, OFFSET @intType
+                PUSH    AX
+                MOV     AX, SEG @intType
+                PUSH    AX
+                MOV     AX, OFFSET @vect
+                PUSH    AX
+                MOV     AX, SEG @vect
+                PUSH    AX
+                EXTRN   @@DosSetIntVect: FAR
+                CALL    @@DosSetIntVect
+                ENDM
+
+@DosSetVerify   MACRO
+                EXTRN   @@DosSetVerify: FAR
+                CALL    @@DosSetVerify
+                ENDM
+
+@DosResetVerify MACRO
+                EXTRN   @@DosResetVerify: FAR
+                CALL    @@DosResetVerify
+                ENDM
+
+@DosVersion     MACRO   @major, @minor
+                MOV     AX, OFFSET @major
+                PUSH    AX
+                MOV     AX, SEG @major
+                PUSH    AX
+                MOV     AX, OFFSET @minor
+                PUSH    AX
+                MOV     AX, SEG @minor
+                PUSH    AX
+                EXTRN   @@DosVersion: FAR
+                CALL    @@DosVersion
+                ENDM
+                
+@DosGetBreak    MACRO   @status
+                MOV     AX, OFFSET @status
+                PUSH    AX
+                MOV     AX, SEG @status
+                PUSH    AX
+                EXTRN   @@DosGetBreak: FAR
+                CALL    @@DosGetBreak
+                ENDM
+                
+@DosSetBreak    MACRO   @status
+                MOV     AX, OFFSET @status
+                PUSH    AX
+                MOV     AX, SEG @status
+                PUSH    AX
+                EXTRN   @@DosSetBreak: FAR
+                CALL    @@DosSetBreak
+                ENDM
+                
+@DosResetBreak  MACRO   @status
+                MOV     AX, OFFSET @status
+                PUSH    AX
+                MOV     AX, SEG @status
+                PUSH    AX
+                EXTRN   @@DosResetBreak: FAR
+                CALL    @@DosResetBreak
+                ENDM
+
+@DosBootDrive   MACRO   @drvLtr
+                MOV     AX, OFFSET @drvLtr
+                PUSH    AX
+                MOV     AX, SEG @drvLtr
+                PUSH    AX
+                EXTRN   @@DosBootDrive: FAR
+                CALL    @@DosBootDrive
+                ENDM
+
+@DosGetIntVect  MACRO   @intType, @vect ; Function 35H
+                MOV     AX, OFFSET @intType
+                PUSH    AX
+                MOV     AX, SEG @intType
+                PUSH    AX
+                MOV     AX, OFFSET @vect
+                PUSH    AX
+                MOV     AX, SEG @vect
+                PUSH    AX
+                EXTRN   @@DosGetIntVect: FAR
+                CALL    @@DosGetIntVect
+                ENDM
+
+@DosGetCountryInfo MACRO  @cInfo
+                MOV     AX, OFFSET @cInfo
+                PUSH    AX
+                MOV     AX, SEG @cInfo
+                PUSH    AX
+                EXTRN   @@DosGetCountryInfo: FAR
+                CALL    @@DosGetCountryInfo
+                ENDM
+
+@DosVerifyStatus MACRO  @status
+                MOV     AX, OFFSET @status
+                PUSH    AX
+                MOV     AX, SEG @status
+                PUSH    AX
+                EXTRN   @@DosVerifyStatus: FAR
+                CALL    @@DosVerifyStatus
+                ENDM
+
+@DosGetPSP      MACRO   @seg
+                MOV     AX, OFFSET @seg
+                PUSH    AX
+                MOV     AX, SEG @seg
+                PUSH    AX
+                EXTRN   @@DosGetPSP: FAR
+                CALL    @@DosGetPSP
+                ENDM
+@@MISC@@        EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

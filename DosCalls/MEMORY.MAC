@@ -1,0 +1,61 @@
+SUBTTL  MEMORY.MAC -- DosCalls : Memory Part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_MEMORY
+IFNDEF  @@MEMORY@@
+%OUT    MEMORY.MAC
+
+@DosAlloc       MACRO   @size, @memseg, @maxparas ; Function 048H
+                MOV     AX, OFFSET @size
+                PUSH    AX
+                MOV     AX, SEG @size
+                PUSH    AX
+                MOV     AX, OFFSET @memseg
+                PUSH    AX
+                MOV     AX, SEG @memseg
+                PUSH    AX
+                MOV     AX, OFFSET @memseg
+                PUSH    AX
+                MOV     AX, SEG @memseg
+                PUSH    AX
+                MOV     AX, OFFSET @maxparas
+                PUSH    AX
+                MOV     AX, SEG @maxparas
+                PUSH    AX
+                EXTRN   @@DosAlloc: FAR
+                CALL    @@DosAlloc
+                ENDM
+
+@DosDealloc     MACRO   @block         ; Function 049H
+                MOV     AX, OFFSET @block
+                PUSH    AX
+                MOV     AX, SEG @block
+                PUSH    AX
+                EXTRN   @@DosDealloc: FAR
+                CALL    @@DosDealloc
+                ENDM
+
+@DosSetblock    MACRO   @block, @size, @maxparas ; Function 04AH
+                MOV     AX, OFFSET @block
+                PUSH    AX
+                MOV     AX, SEG @block
+                PUSH    AX
+                MOV     AX, OFFSET @size
+                PUSH    AX
+                MOV     AX, SEG @size
+                PUSH    AX
+                MOV     AX, OFFSET @maxparas
+                PUSH    AX
+                MOV     AX, SEG @maxparas
+                PUSH    AX
+                EXTRN   @@DosSetblock: FAR
+                CALL    @@DosSetblock
+                ENDM
+                
+@@MEMORY@@      EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

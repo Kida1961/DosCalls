@@ -1,0 +1,54 @@
+SUBTTL  DIR.MAC -- DosCalls : directory part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_DIR
+IFNDEF  @@DIR@@
+%OUT    DIR.MAC
+
+@DosMkDir       MACRO   @path         ; Function 039H
+                MOV     AX, OFFSET @path
+                PUSH    AX
+                MOV     AX, SEG @path
+                PUSH    AX
+                EXTRN   @@DosMkdir: FAR
+                CALL    @@DosMkdir
+                ENDM
+
+@DosRmdir       MACRO   @path         ; Function 03AH
+                MOV     AX, OFFSET @path
+                PUSH    AX
+                MOV     AX, SEG @path
+                PUSH    AX
+                EXTRN   @@DosRmdir: FAR
+                CALL    @@DosRmdir
+                ENDM
+
+@DosChdir       MACRO   @path           ; Function 03BH
+                MOV     AX, OFFSET @path
+                PUSH    AX
+                MOV     AX, SEG @path
+                PUSH    AX
+                EXTRN   @@DosChdir: FAR
+                CALL    @@DosChdir
+                ENDM
+
+@DosCurdir      MACRO   @drive, @directory ; Function 047H
+                MOV     AX, OFFSET @drive
+                PUSH    AX
+                MOV     AX, SEG @drive
+                PUSH    AX
+                MOV     AX, OFFSET @directory
+                PUSH    AX
+                MOV     AX, SEG @directory
+                PUSH    AX
+                EXTRN   @@DosCurdir: FAR
+                CALL    @@DosCurdir
+                ENDM
+                
+@@DIR@@         EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

@@ -1,0 +1,26 @@
+SUBTTL  GETENVS.MAC -- ä¬ã´ïœêîéÊìæ
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_GETENVS
+IFNDEF  @@GETENVS@@
+%OUT    GETENVS.MAC
+
+@getEnv         MACRO   @env, @value
+                MOV     AX, OFFSET @env
+                PUSH    AX
+                MOV     AX, SEG @env
+                PUSH    AX
+                MOV     AX, OFFSET @value
+                PUSH    AX
+                MOV     AX, SEG @value
+                PUSH    AX
+                EXTRN   @@GetEnv: FAR
+                CALL    @@GetEnv
+                ENDM
+@@GETENVS@@     EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

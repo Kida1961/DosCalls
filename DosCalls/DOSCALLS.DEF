@@ -1,0 +1,241 @@
+SUBTTL  DOSCALLS.DEF -- DosCalls definitions
+%OUT    DOSCALLS.DEF
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+                IFNDEF  @@DOSCALLS@@
+STDIN           EQU     0       ; Pre-opened file handles
+STDOUT          EQU     1    
+STDERR          EQU     2    
+STDAUX          EQU     3    
+STDPRN          EQU     4    
+DOSKBDREADY     EQU     0FFH
+DOSMAXLINE      EQU     80H
+DOSMAXPATH      EQU     64      ; Max length of full path name
+DOSDTASIZE      EQU     512     ; Disk transfer area size
+DOSREADONLY     EQU     01H     ; DOS File Attribute Flags
+DOSHIDDEN       EQU     02H
+DOSSYSTEM       EQU     04H
+DOSLABEL        EQU     08H
+DOSSUBDIR       EQU     10H
+DOSARCHIVE      EQU     20H
+                                ; File open mode
+DOSINHERIT      EQU     00H     ; Inherited
+DOSPROVATE      EQU     80H     ; Private
+DOSCOMPTI       EQU     00H     ; Compatibile
+DOSDENYREADWIRTE EQU    10H     ; Deny read/write
+DOSDENYWRITE    EQU     20H     ; Deny write
+DOSDENYREAD     EQU     30H     ; Deny read
+DOSDENYNONE     EQU     40H     ; Deny none
+DOSREADACCESS   EQU     00H     ; Read access
+DOSWRITEACCESS  EQU     01H     ; Write access
+DOSREADWRITEACCESS EQU  02H     ; Read/Write access
+DOSEXECLOADANDGO EQU    0
+DOSEXECLOAD     EQU     3
+DOSEXITTERMINATE EQU    0
+DOSEXITBREACK   EQU     1
+DOSEXITHARDERROR EQU    2
+DOSEXITKEEPMEMORY EQU   3
+DOSON           EQU     1
+DOSOFF          EQU     0
+
+DOSFROMHEAD     EQU     0       ; LSEEK from head
+DOSFROMHERE     EQU     1       ; LSEEK from current position
+DOSFROMTAIL     EQU     2       ; LSEEK from tail
+
+;; FILELIB.ASM related
+FL_READ         EQU     0
+FL_WRITE        EQU     1
+FL_APPEND       EQU     2
+FL_READWRITE    EQU     3
+
+FL_ERRBASE      EQU     0F000H
+FL_NOERROR      EQU     FL_ERRBASE+0    ; NO error
+FL_NOTFOUND     EQU     FL_ERRBASE+1    ; File Not found
+FL_OPEN         EQU     FL_ERRBASE+2    ; File already open
+FL_INUSE        EQU     FL_ERRBASE+3    ; File is already in use
+FL_CANT         EQU     FL_ERRBASE+4    ; Can not read/write
+FL_TOOMANY      EQU     FL_ERRBASE+5    ; Too many files
+FL_EOF          EQU     FL_ERRBASE+6    ; Reach end of file
+FL_INVALID      EQU     FL_ERRBASE+7    ; Invalid mode
+FL_DISKFULL     EQU     FL_ERRBASE+8    ; Invalid mode
+
+@SegOff         STRUC
+@@Seg           DW      0
+@@Off           DW      0
+@SegOff         ENDS
+
+@DosMsg         STRUC
+@@Result        DW      0
+@@Message       DB      DOSMAXLINE+1 DUP('#')
+@DosMsg         ENDS
+
+@DosBuffer      STRUC
+@@MaxChars      DB      DOSMAXLINE
+@@Chars         DB      0
+@@Buffer        DB      DOSMAXLINE+1 DUP(EOS)
+@DosBuffer      ENDS
+
+@DosDTA         STRUC
+@@DTA           DB      21 DUP(0) ; Reserved for DOS
+@@DTAAttrib     DB      0       ; Matched filesb attribute low byte
+@@Time          DW      0       ; File time
+@@Date          DW      0       ; File Date
+@@Size          DD      0       ; File size
+@@DTAName       DB      12 DUP(BLANK), EOS ; Filename and extention
+@DosDTA         ENDS
+
+@DosFullPath    STRUC
+@@DriveName     DB      BLANK
+                DB      ':'
+                DB      '\'
+@@FileName      DB      DOSMAXPATH+1 DUP(EOS)
+@DosFullPath    ENDS
+
+@FCBDate        RECORD  @Year:7, @month:4, @Day:5
+@FCBTime        RECORD  @Hours:5, @Minutes:6, @seconds:5
+
+@DosDate        STRUC
+@@Year          DW      0
+@@Month         DB      0
+@@Day           DB      0
+@DosDate        ENDS
+
+@DosTime        STRUC
+@@Hours         DB      0
+@@Minutes       DB      0
+@@Seconds       DB      0
+@@Pseconds      DB      0
+@DosTime        ENDS
+
+@DosPSP         STRUC           ; Program Segment prefix
+@@INT20H        DW      0
+@@TopOfMem      DW      0       ; Top of memory
+@@Rsv1          DB      6 DUP(0); Reserved
+@@Terminate     DW      0       ; Terminate address (IP)
+                DW      0       ;                   (CS)
+@@BreakExit     DW      0       ; Ctrl-break exit address (IP)
+                DW      0       ;                         (CS)
+@@CriticalExt   DW      0       ; Critical error exit address (IP)
+                DW      0       ;                             (CS)
+@@Rsv2          DB      22 DUP(0) ; Reserved
+@@EnvPtr        DW      0       ; Environment pointer
+@@Rsv3          DB      34 DUP(0) ; Reserved
+@@DosCall       DW      0       ; DOS call
+@@Rsv4          DB      10 DUP(0) ; Reserved
+@@FCB1          DB      16 DUP(0) ; Unopened Standard FCB1
+@@FCB2          DB      20 DUP(0) ; Unopened Standard FCB2
+@@ParamLen      DB      0       ; Parameter length
+@@Param         DB      127 DUP(EOS) ; Command line paramters starting with leading blanks
+@DosPSP         ENDS
+
+@DOSDTTMFMTUS   EQU    0
+@DOSDTTMFMTEURO EQU    1
+@DOSDTTMFMTJPN  EQU    2
+@DOSDTTMFMT12   EQU    0
+@DOSDTTMFMT24   EQU    1
+
+@DosDTTMStringUS STRUC
+@@DTTMHoursUS   DB      2 DUP(BLANK)
+@@DTTMSepa1US   DB      BLANK
+@@DTTMMinutesUS DB      2 DUP(BLANK)
+@@DTTMSepa2US   DB      BLANK
+@@DTTMSecondsUS DB      2 DUP(BLANK)
+@@DTTMAmPmUS    DB      2 DUP(BLANK)
+                DB      BLANK
+@@DTTMYearUS    DB      4 DUP(BLANK)
+@@DTTMSepa3US   DB      BLANK
+@@DTTMMonthUS   DB      2 DUP(BLANK)
+@@DTTMSepa4US   DB      BLANK
+@@DTTMDayUS     DB      3 DUP(BLANK)
+                DB      DALLAR
+@DosDTTMStringUS ENDS
+
+@DosDTTMStringEuro STRUC
+@@DTTMHoursEuro DB      2 DUP(BLANK)
+@@DTTMSepa1Euro DB      BLANK
+@@DTTMMinutesEuro DB    2 DUP(BLANK)
+@@DTTMSepa2Euro DB      BLANK
+@@DTTMSecondsEuro DB    2 DUP(BLANK)
+@@DTTMAmPmEuro  DB      2 DUP(BLANK)
+                DB      BLANK
+@@DTTMDayEuro   DB      3 DUP(BLANK)
+@@DTTMSepa3Euro DB      BLANK
+@@DTTMMonthEuro DB      2 DUP(BLANK)
+@@DTTMSepa4Euro DB      BLANK
+@@DTTMYearEuro  DB      4 DUP(BLANK)
+                DB      DALLAR
+@DosDTTMStringEuro ENDS
+
+@DosDTTMStringJpn STRUC
+@@DTTMYearJpn   DB      4 DUP(BLANK)
+@@DTTMSepa1Jpn  DB      BLANK
+@@DTTMMonthJpn  DB      2 DUP(BLANK)
+@@DTTMSepa2Jpn  DB      BLANK
+@@DTTMDayJpn    DB      3 DUP(BLANK)
+                DB      BLANK
+@@DTTMHoursJpn  DB      2 DUP(BLANK)
+@@DTTMSepa3Jpn  DB      BLANK
+@@DTTMMinutesJpn DB     2 DUP(BLANK)
+@@DTTMSepa4Jpn  DB      BLANK
+@@DTTMSecondsJpn DB     2 DUP(BLANK)
+@@DTTMAmPmJpn   DB      2 DUP(BLANK)
+                DB      DALLAR
+@DosDTTMStringJpn ENDS
+
+@DOSCINFODTTMFMTUS     EQU 0
+@DOSCINFODTTMFMTEURO   EQU 1
+@DOSCINFODTTMFMTJPN    EQU 2
+@DOSCINFOCURFMTLRMASK  EQU 01B
+@DOSCINFOCURFMTLEFT    EQU 0B
+@DOSCINFOCURFMTRIGHT   EQU 01B
+@DOSCINFOCURFMTSPCMASK EQU 010B
+@DOSCINFOCURFMTSPACE   EQU 00B
+@DOSCINFOCURFMTNOSPACE EQU 010B
+@DOSCINFOTIMEFMT12     EQU 0
+@DOSCINFOTIMEFMT24     EQU 1
+
+@DosCInfoBitFeild RECORD Filler:6, CurrSpace:1, CurrChar:1
+
+@DosCuntryInfo  STRUC
+@@DTTMFmt       DW      0       ; Date/Time Format
+@@CurrSym       DB      5 DUP(EOS) ; Currency Symbole
+@@Sep1000       DB      2 DUP(EOS) ; Thousanfs Separator
+@@Sep1          DB      2 DUP(EOS) ; Fraction Separator
+@@SepDate       DB      2 DUP(EOS) ; Date Separator
+@@SepTime       DB      2 DUP(EOS) ; Time Separator
+@@BitField      DB      0
+@@SigDigits     DB      0       ; Number of Signicant Digits in Currency
+@@TimeFmt       DB      0       ; Time Format
+@@UpperCaseAL@  DD      0       ; Address of Routine to Upper Case al
+@@SepData       DB      2 DUP(EOS) ; Data List Separator
+@@Reserved      DB      5 DUP(EOS)
+@DosCuntryInfo  ENDS
+
+@DosExecParm0   STRUC
+@@ENVCS         DW      0
+@@PSP80H        DD      0
+@@PSP5CH        DD      0
+@@PSP6CH        DD      0
+@DosExecParm0   ENDS
+
+@DosExecParm3   STRUC
+@@LOADCS        DW      0
+@@Reloc         DW      0
+@DosExecParm3   ENDS
+
+@DosDiskFree    STRUC
+@@SectAU        DW      0       ; Sectors in allocation unit
+@@AvailAU       DW      0       ; Free allocation unit
+@@SectSize      DW      0       ; Bytes in sector
+@@TotalAU       DW      0       ; Number of allocation units
+@@TotalBytes    DD      0       ; Disk size in bytes
+@@FreeBytes     DD      0       ; Free space in bytes
+@@DriveNumber   DD      0       ; Drive number
+@DosDiskFree    ENDS
+
+@@DOSCALLS@@    EQU     0
+ENDIF
+SUBTTL
+

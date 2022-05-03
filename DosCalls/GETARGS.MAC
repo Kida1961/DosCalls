@@ -1,0 +1,35 @@
+SUBTTL  GETARGS.MAC -- コマンドライン引数
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_GETARGS
+IFNDEF  @@GETARGS@@
+%OUT    GETARGS.MAC
+
+@getArgv        MACRO   @argc, @argv
+                MOV     AX, OFFSET @argc
+                PUSH    AX
+                MOV     AX, SEG @argc
+                PUSH    AX
+                MOV     AX, OFFSET @argV
+                PUSH    AX
+                MOV     AX, SEG @argv
+                PUSH    AX
+                EXTRN   @@getArgv: FAR
+                CALL    @@getArgv
+                ENDM
+
+@getArgc        MACRO   @argc
+                MOV     AX, OFFSET @argc
+                PUSH    AX
+                MOV     AX, SEG @argc
+                PUSH    AX
+                EXTRN   @@getArgc: FAR
+                CALL    @@getArgc
+                ENDM
+@@GETARGS@@     EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

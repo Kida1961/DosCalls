@@ -1,0 +1,131 @@
+SUBTTL  CONSOLE.MAC -- DosCalls : Console part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_CONSOLE
+IFNDEF  @@CONSOLE@@
+%OUT    CONSOLE.MAC
+
+@DosConInEcho   MACRO   @char   ; Function 01H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosConInEcho: FAR
+                CALL    @@DosConInEcho
+                ENDM
+
+@DosDispOut     MACRO   @char   ; Function 02H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosDispOut: FAR
+                CALL    @@DosDispOut
+                ENDM
+
+@DosAuxIn       MACRO   @char   ; Function 03H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosAuxIn: FAR
+                CALL    @@DosAuxIn
+                ENDM
+
+@DosAuxOut      MACRO   @char   ; Function 04H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosAuxOut: FAR
+                CALL    @@DosAuxOut
+                ENDM
+
+@DosPrnOut      MACRO   @char   ; Function 05H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosPrnOut: FAR
+                CALL    @@DosPrnOut
+                ENDM
+
+@DosDirectIn    MACRO   @char   ; Function 06H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosDirectIn: FAR
+                CALL    @@DosDirectIn
+                ENDM
+
+@DosDirectOut   MACRO   @char   ; Function 06H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosDirectOut: FAR
+                CALL    @@DosDirectOut
+                ENDM
+
+@DosDirectInWOEcho MACRO @char  ; Function 07H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosDirectInWOEcho: FAR
+                CALL    @@DosDirectInWOEcho
+                ENDM
+
+@DosConInWOEcho MACRO   @char   ; Function 08H
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@DosConInWOEcho: FAR
+                CALL    @@DosConInWOEcho
+                ENDM
+
+@DosDispString  MACRO   @string ; Function 09H
+                MOV     AX, OFFSET @string
+                PUSH    AX
+                MOV     AX, SEG @string
+                PUSH    AX
+                EXTRN   @@DosDispString: FAR
+                CALL    @@DosDispString 
+                ENDM
+
+@DosBufKbdIn    MACRO   @string, @chars       ; Function 0AH
+                MOV     AX, OFFSET @string
+                PUSH    AX
+                MOV     AX, SEG @string
+                PUSH    AX
+                MOV     AX, OFFSET @chars 
+                PUSH    AX
+                MOV     AX, SEG @chars
+                PUSH    AX
+                EXTRN   @@DosBufKbdIn: FAR
+                CALL    @@DosBufKbdIn
+                ENDM
+
+@DosKbdStatus   MACRO   @status ; Function 0BH
+                MOV     AX, OFFSET @status
+                PUSH    AX
+                MOV     AX, SEG @status
+                PUSH    AX
+                EXTRN   @@DosKbdStatus: FAR
+                CALL    @@DosKbdStatus
+                ENDM
+
+@DosClrKbdBuf   MACRO           ; Function 0CH
+                EXTRN   @@DosClrKbdBuf: FAR
+                CALL    @@DosClrKbdBuf
+                ENDM
+                
+@@CONSOLE@@     EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

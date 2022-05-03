@@ -1,0 +1,37 @@
+# makefile -- Build Samples 
+# tools
+#       masm.exe -- IBM Macro Assembler/2 Version 1.00
+#       lib.exe  -- IBM Library Manager/2 Version 1.00 
+#       maketc.exe -- GNU MAKE 3.71
+
+AS = masm.exe
+LINK = link.exe
+INCDIR = ..\\doscalls
+LINKOPT = /STACK:256
+
+ASMS = args.asm copyfile.asm creat.asm printenv.asm typeout.asm xchdir.asm \
+	dumppsp.asm gettest.asm puttest.asm 
+
+OBJS = args.obj copyfile.obj creat.obj printenv.obj typeout.obj xchdir.obj \
+	dumppsp.obj gettest.obj puttest.obj
+
+EXES = args.exe copyfile.exe creat.exe printenv.exe typeout.exe xchdir.exe \
+	dumppsp.exe gettest.exe puttest.exe 
+
+LIBS = ..\\doscalls\\doscalls.lib
+  
+all : $(EXES)
+
+all : $(EXES)
+	
+%.exe : %.obj
+	 -$(LINK) $(LINKOPT) $(basename $<),,NUL,$(LIBS); 
+
+%.obj : %.asm
+	 $(AS) $(ASFLAGS) $(basename $<);
+
+.PHONY : clean
+
+clean :
+	-rm *.exe
+

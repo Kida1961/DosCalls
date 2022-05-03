@@ -1,0 +1,49 @@
+SUBTTL  DATETIME.MAC -- DosCalls : Datetime part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_DATETIME
+IFNDEF  @@DATETIME@@
+%OUT    DATETIME.MAC
+
+@DosGetDate     MACRO   @date         ; Function 02AH
+                MOV     AX, OFFSET @date
+                PUSH    AX
+                MOV     AX, SEG @date
+                PUSH    AX
+                EXTRN   @@DosGetDate: FAR
+                CALL    @@DosGetDate
+                ENDM
+
+@DosSetDate     MACRO   @date          ; Function 02BH
+                MOV     AX, OFFSET @date
+                PUSH    AX
+                MOV     AX, SEG @date
+                PUSH    AX
+                EXTRN   @@DosSetDate: FAR
+                CALL    @@DosSetDate
+                ENDM
+
+@DosGetTime     MACRO   @now         ; Function 02CH
+                MOV     AX, OFFSET @now
+                PUSH    AX
+                MOV     AX, SEG @now
+                PUSH    AX
+                EXTRN   @@DosGetTime: FAR
+                CALL    @@DosGetTime
+                ENDM
+
+@DosSetTime     MACRO   @now         ; Function 02DH
+                MOV     AX, OFFSET @now
+                PUSH    AX
+                MOV     AX, SEG @now
+                PUSH    AX
+                EXTRN   @@DosSetTime: FAR
+                CALL    @@DosSetTime
+                ENDM
+@@DATETIME@@    EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

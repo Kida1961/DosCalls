@@ -1,0 +1,2703 @@
+PC-DOS低レベルプログラミングライブラリー
+========================================
+PC-DOSでDOSの機能を直接利用するには、DOS機能呼び出しを使用します。INT21Hと
+呼ばれるものです。多くの機能がありますが、プログラマーにとって、お世辞にも
+使いやすい物ではありません。機能番号をAHレジスタに入れ、必要なパラメーター
+をその外のレジスタにセットして、INT 21Hを実行します。戻り値は、レジスターに
+入ってきます。エラーがあればキャリーフラグがセットされ、エラーコードはAX
+レジスタに入ってきます。シンプルですが、機能ごとに必要なパラメーターを
+どのレジスタに設定するのかをテクニカルリファレンスで確認しながらの
+コーディングになってしまい、患わしいったらありません。これを少しでも改善し
+たいと考えたのが、このライブラリーです。ライブラリーは PC-DOSバージョン2.11
+で実装されている DOS機能呼び出しを中心に、PC-DOSバージョン7.00で追加されてる
+機能の一部を追加してあります。全ての機能を含んでいる訳ではありません。
+
+
+ライブラリーは、２つの部分からなります。
+        マクロライブラリー
+        DOS機能呼び出しインターフェイスライブラリー
+
+マクロライブラリーは、マクロの集合体です。プログラム本体に、インクルードして
+使用します。マクロは機能ごとに、マクロファイルを分割してあり、必要な機能分
+だけをインクルードするようになっています。また、重複してインクルードしないよ
+うに、コーディングしてあります。
+
+DOS機能呼び出しインターフェイスライブラリーは、アセンブラーで書かれたサブルー
+チンの集合です。マクロライブラリーは、このライブラリーとのインターフェイスを
+展開します。ライブラリー自体は機能ごとに分割し作成してあるため、プログラム本
+体には、必要な機能部分のみが組み込まれるようになっています。
+
+
+ライブラリーを機能別に分けると、
+
+        DOS機能呼び出しライブラリー
+        応用ライブラリー
+               ファイル操作ライブラリー
+               コマンドラインライブラリー
+               環境変数ライブラリー
+        
+に分けられます。
+DOS機能呼び出しライブラリーは、DOS機能呼び出しと一体一に対応しています。
+応用ライブラリーは、DOS機能呼び出しを利用して上位の機能を実現したライブラリー
+です。ファイル操作、コマンドラインの引数、環境変数の機能があります。
+
+DOS機能呼び出しライブラリー
+===========================
+このライブラリーは、DOS機能呼び出しを容易に利用するためのライブラリーで、
+マクロ・ライブラリーとプログラム・ライブラリーの二つから出来てます。
+マクロ・ライブラリーを使用することで、DOS機能呼び出しで使用するレジスタを意識
+する必要がなくなります。DOS機能呼び出しで使用するパラメーターは、全てアドレス
+渡しで引き渡します。
+
+DOS機能呼び出しを使用するには、ソース・ファイルに"DOSCALLS.MAC"をインクルード
+します。インクルードは、使用する機能グループ毎に行えます。実例はサンプルプロ
+グラムやテストプログラムを参照ください。この外に、"DOSCALLS.DEF"にはDOS機能呼
+び出しで使用する構造体などの定義を記述してあります。"CONSTANT.INC"には良く使
+う記号定数を定義してあります。これらも同時にインクルードすると便利です。
+LINK時には"DosCalls.LIB"をリンクして下さい。リンクの実際は、サンプルプログラム
+やテストプログラムのMAKEFILEを参照して下さい。
+
+        DOSCALLS.MAC　  DOS機能呼び出しマクロ全体をインクルードするマクロ
+                        機能グループをインクルードするためには、このマクロを
+                        インクルードする前に、定数を定義します。
+
+                        EQUで定義する定数 : インクルードするマクロ
+                            INCL_CONSOLE  - CONSOLE.MAC 
+                            INCL_DATETIME - DATETIME.MAC
+                            INCL_DEVICE   - DEVICE.MAC  
+                            INCL_DIR      - DIR.MAC     
+                            INCL_DISK     - DISK.MAC    
+                            INCL_FILE     - FILE.MAC    
+                            INCL_MEMORY   - MEMORY.MAC  
+                            INCL_MISC     - MISC.MAC    
+                            INCL_PROCESS  - PROCESS.MAC
+        CONSOLE.MAC     コンソール入出力機能マクロ
+        DATETIME.MAC    DOSの持つ時計機能操作マクロ
+        DEVICE.MAC      装置操作マクロ
+        DIR.MAC         ディレクトリー操作マクロ
+        DISK.MAC        ディスク操作マクロ
+        FILE.MAC        ファイル操作マクロ
+        MEMORY.MAC      メモリー関連マクロ
+        MISC.MAC        ほかに分類できないさまざまな操作マクロ
+        PROCESS.MAC     プログラム操作マクロ
+
+DOS機能呼び出しライブラリーは、DOS の処理でエラーがあれば CY フラグをセットし
+AX レジスタにエラーコードを返します。
+
+        エラーコード    エラー原因
+        ------------    --------------------------------------------------
+         DOSError01     無効な機能番号
+         DOSError02     ファイルが見つからない
+         DOSError03     パスが見つからない
+         DOSError04     オープン・ファイルが多すぎる
+         DOSError05     アクセスが拒絶された
+         DOSError06     無効なハンドル
+         DOSError07     メモリー制御ブロックが破壊された
+         DOSError08     十分なメモリーがない
+         DOSError09     無効なメモリー・ブロック・アドレス
+         DOSError10     無効な環境
+         DOSError11     無効な形式
+         DOSError12     無効なアクセス・コード
+         DOSError13     無効なデータ
+         DOSError14     (未定義)
+         DOSError15     無効なドライブが指定された
+         DOSError16     現在使っているディレクトリーを削除しようとした
+         DOSError17     同じ装置でない
+         DOSError18     もうファイルがない
+        ------------    --------------------------------------------------
+
+応用ライブラリー
+================
+このライブラリーはDOS機能呼び出しライブラリーの上位ライブラリーで、
+
+        ファイル操作 (FILELIB)
+        コマンドラインの取得 (GETARGS)
+        環境変数の取得 (GETENVS)   
+        
+を容易に行うライブラリーです。
+これらの機能を使用するには、"DOSCALLS.MAC"のインクルードが必要です。
+ファイル操作ライブラリーをインクルードするには、INCL_FILELIBを定義します。
+コマンドラインライブラリーをインクルードするには、INCL_GETARGSを定義します。
+環境変数ライブラリーをインクルードするには、INCL_GETENVSを定義します。
+DOS機能呼び出しを使用する場合と同様に、"CONSTANT.INC"、"DOSCALLS.DEF"も一緒に
+インクルードします。リンク時には"DosCalls.LIB"をリンクして下さい。
+
+応用ライブラリーのファイル操作の結果は、リターンコードとして、AXレジスタに
+戻されます。リターンコードは、DOS機能呼び出しのエラーコードが優先します。
+
+        リターンコード  意味
+        --------------- -------------------------------------------------
+         FLIBRC00       不具合なし
+         FLIBRC01       ファイルが見つからない
+         FLIBRC02       オープンできない
+         FLIBRC03       使用中
+         FLIBRC04       読み取れない/書き込めない
+         FLIBRC05       オープンするファイルが多過ぎる
+         FLIBRC06       ファイルの終了を検出した
+         FLIBRC07       無効なファイルハンドル
+         FLIBRC08       ディスクに空がない
+        --------------- -------------------------------------------------
+
+
+リターンコード処理のし方
+========================
+
+        CY フラグを見る。
+        　　　　セットされていれば、DOS機能呼び出しでエラーあり。
+                エラーコードは、AXレジスタにある。
+        AXレジスタをFL_NOERRORと比較する。
+                一致しなければ、AXレジスタにエラーコード。
+        
+
+        エラー処理サンプル
+        -----------------------------------------------------------------
+        
+        INCLUDE CONSTANT.INC
+        
+        INCL_CONSOLE    EQU     0    
+        INCL_FILELIB    EQU     0    
+        INCL_PROCESS    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+        
+
+        FileName        DB      "AFile.DAT", EOS
+        Handle          DB      0
+        Mode            DB      FL_READ
+
+
+
+                        @open   Handle, FileName, Mode
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+
+        DOSErr:
+                        ; DOSエラー処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+
+        -----------------------------------------------------------------
+
+使用ツール
+==========
+各プログラムの作成には、以下のツールを使用しています。
+
+        MASM.EXE : IBM Macro Assembler/2 Version 1.00 
+        LINK.EXE : IBM Linker/2 Version 1.00 
+        LIB.EXE  : IBM Library Manager/2 Version 1.00 
+        MAKE.EXE : GNU MAKE 3.71
+
+
+
+DOS機能呼び出しライブラリー説明
+===============================
+
+CONSOLE.MAC -- コンソール入出力
+===============================
+コンソールの入出力、プリンター出力、補助(RS-232Cポート)入出力を行います。
+
+機能番号 1 @DosConInEcho : エコーありキーボード入力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+キーボードから一文字読み込みます。キーが押されるまで戻りません。押された
+キーはエコーされます。ブレークが可能です。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        input           DB      "入力文字 =>"
+        char            DB      BLANK, DALLAR
+
+                        @DosConInEcho char
+                        @DosDispString input
+
+        -----------------------------------------------------------------                                                                                                                                                                                      
+
+機能番号 2 @DosDispOut : ディスプレー出力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+一文字、ディスプレーに表示します。ブレークが可能です。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        char            DB      "X"
+
+                        @DosDispOut char
+
+        -----------------------------------------------------------------
+
+機能番号 3 @DosAuxIn : 補助(RS-232Cポート)入力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+一文字、補助入力装置から読み取ります。入力があるまで戻りません。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        input           DB      "入力文字 =>"
+        char            DB      BLANK, DALLAR
+
+                        @DosAuxIn char
+                        @DosDispString input
+
+        -----------------------------------------------------------------
+
+機能番号 4 @DosAuxOut : 補助(RS-232Cポート)出力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+一文字、補助出力装置へ書き込みます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        Char            DB      "A"  
+
+                        @DosAuxOut Char
+                        
+        -----------------------------------------------------------------
+
+機能番号 5 @DosPrnOut : プリンター出力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+一文字、プリンターへ出力します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        Char            DB      "C"
+
+                        @DosPrnOut Char
+                        
+        -----------------------------------------------------------------
+
+機能番号 6 @DosDirectIn : 直接コンソール入力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+キーボードから一文字読み取ります。キーボードに文字がなければ、
+文字コード"00"が返されます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        input           DB      "入力文字 =>"
+        char            DB      BLANK, DALLAR
+
+        InputLoop:      ; 文字が入力されるまで待つ
+                        @DosDirectIn char
+                        MOV     AL, char        ; 文字が入力されたのを確認
+                        CMP     char, BYTE PTR 0H
+                        JE      InputLoop       ; 入力されなかった時はループ
+                        @DosDispString input
+
+        -----------------------------------------------------------------
+        
+機能番号 6 @DosDirectOut : 直接コンソール出力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+コンソールに一文字表示します。文字の内容をチェックしません。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        Char            DB      "C"
+
+                        @DosDirectOut Char
+                        
+        -----------------------------------------------------------------
+
+機能番号 7 @DosDirectInWOEcho : エコーなし直接コンソール入力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+コンソールから一文字読み取ります。キーが入力されるまで待ちます。
+押されたキーをエコーバックしません。また、文字のチェックをしません。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        input           DB      "入力文字 =>"
+        char            DB      BLANK, DALLAR
+
+                        @DosDirectInWOEcho char
+                        @DosDispString input
+
+        -----------------------------------------------------------------
+
+機能番号 8 @DosConInWOEcho : エコーなしコンソール入力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+コンソールから一文字読み取ります。キーが入力されるまで待ちます。
+押されたキーをエコーバックしません。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        Input           DB      "入力文字 =>"
+        Char            DB      BLANK, DALLAR
+
+                        @DosConInWOEcho Char
+                        @DosDispString Input
+        
+        -----------------------------------------------------------------
+
+機能番号 9 @DosDispString : 文字列の表示
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+コンソールへ文字列を出力します。文字列は"$"で終端します。"$"を出力することは
+出来ません。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+        String1         DB      "これは、サンプル文字列です。", DALLAR
+        
+        ; String2は、「これは、」としか表示されない
+        String2         DB      "これは、$入りのサンプル文字列です。", DALLAR
+
+                        @DosDispString String1
+                        @DosDispString String2
+
+        -----------------------------------------------------------------
+        
+機能番号 A @DosBufKbdIn : バッファー付キーボード入力
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+改行キーが押されるまで、入力を読続けます。改行キーを押す前なら入力文字列を
+編集できます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     20
+
+        Chars           DW      BUFSIZ
+        String          DB      BUFSIZ DUP(BLANK)
+
+                        @DosDispString String, Chars
+                        LEA     BX, String,
+                        MOV     DI, WORD PTR Chars
+                        MOV     BYTE PTR [BX+DI], DALLAR
+                        @DosDispString String,
+
+        -----------------------------------------------------------------
+
+機能番号 B @DosKbdStatus : キーボードステータスの読み取り
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+すでにキーが押されていれば DOSKBDREADY を返します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF                                                                                                                                                                                                                           
+
+        Status          DW      NOT DOSKBDREADY
+
+        Loop:           ; キーが押されるまでループ
+                        @DosKbdStatus Status
+                        MOV     AX, Status
+                        CMP     AX, DOSKBDREADY
+                        JNE     Loop
+
+        -----------------------------------------------------------------
+
+機能番号 C @DosClrKbdBuf : キーボードバッファーのクリア
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+キーボードバッファーをクリアする。(本来は、バッファーをクリアして、一文字
+読み取る機能であるが、他の機能と組み合わせれば可能なのでキーボードバッファの
+クリア機能のみに使用している)
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        Msg             DB      "何かキーを押して下さい。", DALLAR
+        NewLine         DB      CRCHAR, LFCHAR, DALLAR
+        Junk            DB      BLANK
+
+                        @DosDispString Msg      ; pause
+                        @DosClrKbdBuf
+                        @DosDirectInWOEcho Junk
+                        @DosDispString NewLine
+
+        -----------------------------------------------------------------
+
+
+DATETIME.MAC -- 時計機能
+========================
+時計機能の操作を行います。
+
+機能番号 2A @DosGetDate : 日付読み取り
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                                                                                                                                                                                      
+DOSDATE構造体形式の領域に、現在日付を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_DATETIME   EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        BUFSIZ          EQU     4
+        
+　　　　CurDate         @DOSDATE <0,0,0>
+        Year            DW      0
+        Month           DB      0
+        Day             DB      0
+        Buffer          DB      BUFSIZ DUP(BLANK), DALLAR
+        Nen             DB      "年", DALLAR     
+        Tsiki           DB      "月", DALLAR     
+        Hi              DB      "日", DALLAR
+
+                        @DosGetDate CurDate
+                        CALL    ClrBuf
+                        MOV     AX, CurDate.@@Year
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString Nen   
+                        CALL    ClrBuf
+                        MOV     AX, 0
+                        MOV     AL, CurDate.@@Month
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString Tsuki 
+                        CALL    ClrBuf
+                        MOV     AX, 0
+                        MOV     AL, CurDate.@@Day  
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString Hi
+                        @DosDispString NewLine
+                        
+
+
+        ; 数値を文字列に変換
+        int2dec         PROC    NEAR
+        int2dec1:      
+                        LEA     BX, Buffer
+                        MOV     DI, BUFSIZ
+                        MOV     AX, DatTim
+                        MOV     CX, 10
+        int2dec4:      
+                        CMP     AX, 10
+                        JL      int2dec3
+                        CWD
+                        DIV     CX
+                        ADD     DL, '0'
+                        MOV     BYTE PTR [BX+DI], DL
+                        DEC     DI
+                        JMP     int2dec4
+        int2dec3:      
+                        ADD     AL, '0'
+                        MOV     BYTE PTR [BX+DI], AL
+                        RET
+        int2dec         ENDP
+        
+        ; Bufferをクリア
+        ClrBuf          PROC    NEAR
+                        LEA     BX, Buffer
+                        MOV     DI, 0
+                        MOV     CX, BUFSIZ
+        ClrBuf2:                
+                        JCXZ    ClrBuf1
+                        MOV     BYTE PTR [BX+DI], BLANK
+                        INC     DI
+                        DEC     CX
+                        JMP     ClrBuf2:
+        ClrBuf1:                
+                        RET
+        ClrBuf          ENDP
+
+        -----------------------------------------------------------------
+
+機能番号 2B @DosSetDate : 日付設定
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DOSDATE構造体形式の領域に設定された、日付を設定します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_DATETIME   EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+        
+　　　  NewDate         @DOSDATE <0,0,0>
+
+                        MOV     NewData.@@Year, 2020
+                        MOV     NewData.@@Month, 11
+                        MOV     NewData.@@Day, 7
+                        @DosSetDate NewDate
+                        
+        -----------------------------------------------------------------
+
+機能番号 2C @DosGetTime : 時刻取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DOSTIME構造体形式の領域に現在時刻を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_DATETIME   EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        BUFSIZ          EQU     4
+        
+　　　　CurTime         @DOSTIME <0,0,0>
+        Houres          DW      0
+        Minutes         DB      0
+        Seconds         DB      0
+        Buffer          DB      BUFSIZ DUP(BLANK), DALLAR
+        Sepa            DB      ":"
+
+
+                        @DosGetTime CurTime
+                        CALL    ClrBuf
+                        MOV     AX, CurTime.@@Hours
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispOut Sepa   
+                        CALL    ClrBuf
+                        MOV     AX, 0
+                        MOV     AL, CurDate.@@Minutes
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispOut Sepa   
+                        CALL    ClrBuf
+                        MOV     AX, 0
+                        MOV     AL, CurDate.@@Seconds
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString NewLine
+                        
+
+        ; 数値を文字列に変換
+        int2dec         PROC    NEAR
+        int2dec1:      
+                        LEA     BX, Buffer
+                        MOV     DI, BUFSIZ
+                        MOV     AX, DatTim
+                        MOV     CX, 10
+        int2dec4:      
+                        CMP     AX, 10
+                        JL      int2dec3
+                        CWD
+                        DIV     CX
+                        ADD     DL, '0'
+                        MOV     BYTE PTR [BX+DI], DL
+                        DEC     DI
+                        JMP     int2dec4
+        int2dec3:      
+                        ADD     AL, '0'
+                        MOV     BYTE PTR [BX+DI], AL
+                        RET
+        int2dec         ENDP
+        
+        ; Bufferをクリア
+        ClrBuf          PROC    NEAR
+                        LEA     BX, Buffer
+                        MOV     DI, 0
+                        MOV     CX, BUFSIZ
+        ClrBuf2:                
+                        JCXZ    ClrBuf1
+                        MOV     BYTE PTR [BX+DI], BLANK
+                        INC     DI
+                        DEC     CX
+                        JMP     ClrBuf2:
+        ClrBuf1:                
+                        RET
+        ClrBuf          ENDP
+
+        -----------------------------------------------------------------
+
+機能番号 2D @DosSetTime : 時刻設定
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DOSTIME構造体形式の領域に設定された、時刻を設定します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_DATETIME   EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+        
+　　　  NewTime         @DOSTIME <0,0,0>
+
+                        MOV     NewTime.@@Hours,12
+                        MOV     NewTime.@@Minutes, 34
+                        MOV     NewTime.@@Seconds, 56
+                        @DosSetDate NewDate
+                        
+        -----------------------------------------------------------------
+
+DEVICE.MAC -- 装置操作
+======================
+(未実装)
+
+DIR.MAC -- ディレクトリー操作
+=============================
+
+機能番号 39 @DosMkDir : ディレクトリー作成
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ディレクトリーを作ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_DIR        EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+　　　  NewDir          DB      "A:\NewDir", EOS
+
+                        @DosMkDir NewDir
+                        JC      DosErr  ; DOSエラー検査
+
+        DosErr:
+                        ; DOSエラー処理
+
+        -----------------------------------------------------------------
+
+機能番号 3A @DosRmDir : ディレクトリー削除
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ディレクトリーを削除します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_DIR        EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+　　　  RemDir          DB      "A:\RemDir", EOS
+
+                        @DosRmDir RemDir
+                        JC      DosErr  ; DOSエラー検査
+
+        DosErr:
+                        ; DOSエラー処理
+
+        -----------------------------------------------------------------
+
+機能番号 3B @DosChDir : ディレクトリー移動
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ディレクトリーを移動します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_DIR        EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+　　　  NewDir          DB      "A:\NewDir", EOS
+
+                        @DosChDir NewDir
+                        JC      DosErr  ; DOSエラー検査
+
+        DosErr:
+                        ; DOSエラー処理
+
+        -----------------------------------------------------------------
+
+機能番号 47 @DosChDir : ディレクトリー取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+現行ディレクトリーを取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+　　　　INCL_CONSOLE EQU 0 
+        INCL_DIR        EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     68
+        
+        Msg1            DB      "ドライブ "
+        DrvLtr          DB      "A"
+                        DB      " の現在のディレクトリーは、 ", DALLAR
+        Msg3            DB      " です。", CRCHAR LFCHAR, DALLAR
+　　　  CurDir          DB      BUFSIZ DUP(BLANK)
+
+                        @DosCurdir DrvLtr, CurDir
+                        JC      DosErr  ; DOSエラー検査
+                        @DosDispString Msg1
+                        LEA     BX, CurDir
+                        MOV     DI,0
+        loop1:
+                        MOV     AL, BYTE PTR [BX+DI]
+                        CMP     AL, EOS
+                        JE      loop2
+                        MOV     char, AL
+                        @DosDispOut char
+                        INC     DI
+                        JMP     loop1
+        loop2:
+                        @DosDispString Msg2
+        
+
+        DosErr:
+                        ; DOSエラー処理
+
+        -----------------------------------------------------------------
+
+DISK.MAC -- ディスク操作
+========================
+
+機能番号 0D @DosDiskReset : ディスクのリセット
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+全てのファイル・バッファーを書出します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_DISK       EQU     0
+        INCLUDE DOSCALLS.MAC
+        
+                        @DosDiskReset
+                        JC      DOSErrr ; DOSエラー検査
+
+        DOSErr:
+                        ; DOSエラー処理
+
+        -----------------------------------------------------------------
+
+機能番号 0E @DosSelDisk : ディスクの選択
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ディスクを選択し、システムに接続されているディスク装置の論理台数を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_DISK       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        Msg1            DB      "ドライブ "
+        DrvLtr          DB      BLANK
+                        DB      " を選択しました。", CRCHAR, LFCHAR, DALLAR
+        Drives          DW      -1
+        Msg2            DB      "ドライブ数は "
+        Buffer          DB      BUFSIZ DUP(BLANK)
+                        DB      " 台です。", CRCHAR, LFCHAR, DALLAR
+        
+                        @DosSelDisk DrvLtr, Drives
+                        JC DOSErr
+                        @DosDispString Msg1                                                                                                                                                                                          
+                        CALL    int2dec
+                        @DosDispString Msg2
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        ; 数値を文字列に変換
+        int2dec         PROC    NEAR
+        int2dec1:      
+                        LEA     BX, Buffer
+                        MOV     DI, BUFSIZ
+                        MOV     AX, DatTim
+                        MOV     CX, 10
+        int2dec4:      
+                        CMP     AX, 10
+                        JL      int2dec3
+                        CWD
+                        DIV     CX
+                        ADD     DL, '0'
+                        MOV     BYTE PTR [BX+DI], DL
+                        DEC     DI
+                        JMP     int2dec4
+        int2dec3:      
+                        ADD     AL, '0'
+                        MOV     BYTE PTR [BX+DI], AL
+                        RET
+        int2dec         ENDP
+        
+        -----------------------------------------------------------------
+
+機能番号 19 @DosCurDisk : 現ディスク
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+現在のドライブ名を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_DISK       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        Msg             DB      "現在のドライブは "
+        DrvLtr          DB      BLANK
+                        DB      " です。", CRCHAR, LFCHAR, DALLAR
+        
+                        @DosSelDisk DrvLtr, Drives
+                        @DosDispString Msg
+
+        -----------------------------------------------------------------
+
+機能番号 36 @DosDiskFree : 空スペース
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ディスクの空スペースを取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE DOSCALLS.MAC
+        INCL_CONSOLE    EQU     0
+        INCL_DISK       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     6
+
+        Msg1            DB      "ドライブ "
+        DrvLtr          DB      BLANK
+                        DB      " の 空スペース", CRCHAR, LFCHAR, DALLAR
+        Clst            DW      0
+        TotClst         DW      0
+        BytePSec        DW      0
+        Sctrs           DW      0
+        Msg2            DB      "            クラスター数", DALLAR
+        Msg3            DB      "          全クラスター数", DALLAR
+        Msg4            DB      "セクター当たりのバイト数", DALLAR
+        Msg5            DB      "              セクター数", DALLAR
+        Buffer          DB      BUFSIZ DUP(BLANK), DALLAR
+        NewLine         DB      CRCHAR, LFCHAR, NEWLINE
+        
+                        @DosDiskFree DrvLtr, Clst, TotClst, BytePSec, Sectrs
+                        JC      DOSErr  ; DOSエラー検査
+                        @DosDispString Msg1
+                        @DosDispString Msg2
+                        MOV     AX, Clst
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString NewLine
+                        @DosDispString Msg3
+                        CALL    ClrBuf
+                        MOV     AX, TotClst
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString NewLine
+                        @DosDispString Msg4
+                        CALL    ClrBuf
+                        MOV     AX, BytePSec
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString NewLine
+                        @DosDispString Msg5
+                        CALL    ClrBuf
+                        MOV     AX, Sctrs
+                        CALL    int2dec
+                        @DosDispString Buffer
+                        @DosDispString NewLine
+
+
+        DOSErr:
+                        ; DOSエラー処理
+
+
+        ; 数値を文字列に変換
+        int2dec         PROC    NEAR
+        int2dec1:      
+                        LEA     BX, Buffer
+                        MOV     DI, BUFSIZ
+                        MOV     CX, 10
+        int2dec4:      
+                        CMP     AX, 10
+                        JL      int2dec3
+                        CWD
+                        DIV     CX
+                        ADD     DL, '0'
+                        MOV     BYTE PTR [BX+DI], DL
+                        DEC     DI
+                        JMP     int2dec4
+        int2dec3:      
+                        ADD     AL, '0'
+                        MOV     BYTE PTR [BX+DI], AL
+                        RET
+        int2dec         ENDP
+
+        ; Bufferをクリア
+        ClrBuf          PROC    NEAR
+                        LEA     BX, Buffer
+                        MOV     DI, 0
+                        MOV     CX, BUFSIZ
+        ClrBuf2:                
+                        JCXZ    ClrBuf1
+                        MOV     BYTE PTR [BX+DI], BLANK
+                        INC     DI
+                        DEC     CX
+                        JMP     ClrBuf2:
+        ClrBuf1:                
+                        RET
+        ClrBuf          ENDP
+
+        -----------------------------------------------------------------
+
+FILE.MAC -- ファイル操作
+========================
+
+機能番号 1A @DosSetDTA : ディスク転送領域設定
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ディスク転送領域を設定します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        NewDTA          @DosDTA <>
+
+
+                        @DosSetDTA NewDTA 
+                        JC      DOSErr  ; DOSエラー検査
+
+
+        DOSErr:
+                        ; DOSエラー処理
+
+        -----------------------------------------------------------------
+
+機能番号 2F @DosGetDTA : ディスク転送領域取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+現在のディスク転送領域を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        CurDTA          @DosDTA <>
+
+
+                        @DosSetDTA CurDTA 
+
+        -----------------------------------------------------------------
+
+機能番号 3C @DosCreat : ファイル作成
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+新しいファイルを作成します。
+第二パラメーター Attrib には、 DOSREADONLY を設定します。
+ファイルを作成できたら、 Handle を返します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        Name            DB      "NewFile.DAT", EOS
+        Attrib          DB      DOSREADONLY
+        Handle          DW      -1
+
+
+                        @DosCrear Name, Attrib, Handle
+                        JC      DOSErr
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 3D @DosOpen : ファイルオープン
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイルをオープンします。
+第二パラメーター Mode には、
+
+        DOSREADACCESS
+        DOSWRITEACCESS
+        DOSREADWRITEACCESS
+        
+のいずれかを設定します。ファイルをオープンできたら、Handle を返します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        Name            DB      "OldFile.DAT", EOS
+        Mode            DB      DOSREADACCESS
+        Handle          DW      -1
+
+
+                        @DosOpen Name, Mode, Handle
+                        JC      DOSErr
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 3E @DosOpen : ファイルクローズ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイルをクローズします。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        Handle          DW      -1
+
+
+                        @DosClose Handle
+                        JC      DOSErr
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 3F @DosRead : 読取り
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Handle に結び付けられたファイルまたは装置から、Chars バイトを Buffer に
+読取ります。実際に読み取られたバイト数を Chars に返します。
+要求したバイト数分読み取れなかった場合でも、エラーになりません。
+0 バイト読み取った場合は、ファイルの終端に達したことを示します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     80
+        
+        Handle          DW      -1
+        Buffer          DB      BUFSIZ DUP(BLANK)
+        Chars           DW      BUFSIZ
+
+                        @DosRead Handle, Buffer, Chars
+                        JC      DOSErr
+                        MOV     AX, Chars
+                        CMP     AX, 0
+                        JE      EOF
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        EOF:
+                        ; EOF の処理
+                        
+        -----------------------------------------------------------------
+
+機能番号 40 @DosWrited : 書出し
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Handle に結び付けられたファイルまたは装置に、Chars バイトを Buffer から
+書出します。実際に書かれたバイト数を Chars に返します。
+書かれたバイト数が、書き込もうとしたバイト数よりも少ない場合は、ドライブに
+空がない事を示しています。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     80
+        
+        Handle          DW      -1
+        Buffer          DB      BUFSIZ DUP(BLANK)
+        Chars           DW      BUFSIZ
+
+                        @DosWrite Handle, Buffer, Chars
+                        JC      DOSErr
+                        MOV     AX, Chars
+                        CMP     AX, 0
+                        JE      DiskFull
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        DiskFull:
+                        ; DiskFull の処理
+                        
+        -----------------------------------------------------------------
+
+機能番号 41 @DosDelete : 削除
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Name のファイルを削除します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        FileName        DB      "A:FILENAME.DAT", EOS
+
+                        @DosDelete FileName
+                        JC      DOSErr
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 42 @DosLSeek : ファイルポインター移動
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイルポインターを移動します。移動は、ファイルの先頭から、現在位置から、
+ファイルの終りからの相対位置を指定して、移動します。
+
+        Method          移動のし方
+        --------------- ------------------------------------------
+         DOSFROMHEAD    ファイルの先頭からの相対位置に移動
+         DOSFROMHERE    現在位置からの相対位置に移動
+         DOSFROMTAIL    ファイルの終りの位置からの相対位置に移動
+        --------------- ------------------------------------------
+        
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        FileName        DB      "A:FILENAME.DAT", EOS
+        Handle          DW      -1
+        CurPos          DW      -1
+                        DW      -1
+        NewPos          DW      -1
+                        DW      -1
+        Offset          DW      -1
+                        DW      -1
+        Method          DW      0
+
+
+                        MOV     Offset, 10
+                        MOV     Method  DOSFROMHEAD
+                        @DosLSeek Handle, Offset, Method  
+                        JC      DOSErr
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 43 @DosChmod : ファイル属性変更
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイル属性を変更します。
+
+        ファイル属性
+        -------------------------------------
+        DOSREADONLY     読だし専用
+        DOSHIDDEN       隠しファイル
+        DOSSYSTEM       システム・ファイル
+        DOSLABEL        ラベル
+        DOSSUBDIR       サブ・ディレクトリー
+        DOSARCHIVE      保存
+        -------------------------------------
+        
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        FileName        DB      "A:FILENAME.DAT", EOS
+        Mode            DW      0
+
+
+                        MOV     Mode, DOSREADONLY | DOSSYSTEM
+                        @DosChmod FileName, Mode
+                        JC      DOSErr
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 43 @DosGetMod : ファイル属性得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイル属性を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        FileName        DB      "A:FILENAME.DAT", EOS
+        Attrib          DW      0
+        Msg0            DB      "ファイル属性                      現在の属性"
+                        DB      CRCHAR, LFCHAR, DALLAR
+        Msg1            DB      "      読取り専用ファイル (READONLY) ", DALLAR
+        Msg2            DB      "              隠しファイル (HIDDEN) ", DALLAR
+        Msg3            DB      "        システム・ファイル (SYSTEM) ", DALLAR 
+        Msg4            DB      "          ボリュームラベル  (LABEL) ", DALLAR 
+        Msg5            DB      "サブ・ディレクトリー (SUBDIRECTORY) ", DALLAR 
+        Msg6            DB      "              保存ビット  (ARCHIVE) ", DALLAR 
+        MsgOn           DB      "ON", DALLAR
+        MsgOff          DB      "OFF", DALLAR
+
+
+                        @DosGetMod FileName, Attrib
+                        JC      DOSErr
+                        CALL    dispAttrib
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        ; 属性を表示
+        dispAttrib      PROC    NEAR
+                        MOV     TestFileAttrib, AX
+                        @DosDispString Msg0
+                        @DosDispString Msg1
+                        MOV     AX, TestFileAttrib
+                        AND     AX, WORD PTR DOSREADONLY
+                        JZ      dispAttrib1
+                        @DosDispString MsgOn
+                        JMP     dispAttrib2
+        dispAttrib1:                
+                        @DosDispString MsgOff
+        dispAttrib2:                
+                        @DosDispString NewLine
+                        @DosDispString Msg2
+                        MOV     AX, TestFileAttrib 
+                        AND     AX, WORD PTR DOSHIDDEN
+                        JZ      dispAttrib3
+                        @DosDispString MsgOn
+                        JMP     dispAttrib4
+        dispAttrib3:                
+                        @DosDispString MsgOff
+        dispAttrib4:                
+                        @DosDispString NewLine
+                        @DosDispString Msg3
+                        MOV     AX, TestFileAttrib 
+                        AND     AX, WORD PTR DOSSYSTEM
+                        JZ      dispAttrib5
+                        @DosDispString MsgOn
+                        JMP     dispAttrib6
+        dispAttrib5:                
+                        @DosDispString MsgOff 
+        dispAttrib6:                
+                        @DosDispString NewLine
+                        @DosDispString Msg4
+                        MOV     AX, TestFileAttrib 
+                        AND     AX, WORD PTR DOSLABEL
+                        JZ      dispAttrib7
+                        @DosDispString MsgOn
+                        JMP     dispAttrib8
+        dispAttrib7:                
+                        @DosDispString MsgOff 
+        dispAttrib8:                
+                        @DosDispString NewLine
+                        @DosDispString Msg5
+                        MOV     AX, TestFileAttrib 
+                        AND     AX, WORD PTR DOSSUBDIR
+                        JZ      dispAttrib9
+                        @DosDispString MsgOn
+                        JMP     dispAttrib10
+        dispAttrib9:                
+                        @DosDispString MsgOff
+        dispAttrib10:                
+                        @DosDispString NewLine
+                        @DosDispString Msg6
+                        MOV     AX, TestFileAttrib 
+                        AND     AX, WORD PTR DOSARCHIVE
+                        JZ      dispAttrib11
+                        @DosDispString MsgOn
+                        JMP     dispAttrib12
+        dispAttrib11:                
+                        @DosDispString MsgOff
+        dispAttrib12:                
+                        RET
+        dispAttrib      ENDP
+
+        -----------------------------------------------------------------
+
+機能番号 4E @DosFindFirst : 最初に一致するファイル
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+最初に一致するファイルを探します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        NewDTA          @DosDTA <>
+        FileName        DB      "A:FILE*.DAT", EOS
+        Attrib          DB      DOSREADONLY
+        
+
+                        @DosSetDTA NewDTA
+                        @DosFindFirst FileName, Atrrib
+                        JC      DOSErr
+                        CALL    dispDTAInfo
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+
+        dispDTAInfo     PROC    NEAR
+                        @DosDispString Test4EMsg7
+                        LEA     SI, TestDTA.@@DTAName
+                        LEA     DI, TestFileName
+                        CALL    getFileName
+                        @DosDispString TestFileName
+                        @DosDispString NewLine
+                        RET
+        dispDTAInfo     ENDP
+                        
+        getFileName     PROC    NEAR
+        getFileName2:
+                        MOV     AL, BYTE PTR [SI]
+                        CMP     AL, BYTE PTR EOS
+                        MOV     BYTE PTR [DI], AL
+                        JE      getFileName1 
+                        INC     SI
+                        INC     DI
+                        JMP     getFileName2
+        getFileName1:  
+                        MOV     BYTE PTR [DI], DALLAR
+                        RET
+        getFileName     ENDP
+
+
+        -----------------------------------------------------------------
+
+機能番号 4F @DosFindNext : 次に一致するファイル
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+次に一致するファイルを探します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        NewDTA          @DosDTA <>
+        FileName        DB      "A:FILE*.DAT", EOS
+        Attrib          DB      DOSREADONLY
+        
+
+                        @DosSetDTA NewDTA
+                        @DosFindFirst FileName, Atrrib
+                        JC      DOSErr
+                        CALL    dispDTAInfo
+        FindFile1:
+                        CALL    Pause
+                        @DosFindNext
+                        CMP     AX, 18
+                        JE      FindFile2
+                        CALL    dispDTAInfo
+                        JMP     FindFile1
+        FindFile2:
+
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+
+        dispDTAInfo     PROC    NEAR
+                        @DosDispString Test4EMsg7
+                        LEA     SI, TestDTA.@@DTAName
+                        LEA     DI, TestFileName
+                        CALL    getFileName
+                        @DosDispString TestFileName
+                        @DosDispString NewLine
+                        RET
+        dispDTAInfo     ENDP
+                        
+        getFileName     PROC    NEAR
+        getFileName2:
+                        MOV     AL, BYTE PTR [SI]
+                        CMP     AL, BYTE PTR EOS
+                        MOV     BYTE PTR [DI], AL
+                        JE      getFileName1 
+                        INC     SI
+                        INC     DI
+                        JMP     getFileName2
+        getFileName1:  
+                        MOV     BYTE PTR [DI], DALLAR
+                        RET
+        getFileName     ENDP
+
+        pause           PROC    NEAR
+                        @DosDispString PauseMsg
+                        @DosClrKbdBuf
+                        @DosDirectInWOEcho bJunk
+                        @DosDispString NewLine
+                        @DosDispString NewLine
+                        RET
+        pause           ENDP
+
+        -----------------------------------------------------------------
+
+機能番号 56 @DosRename : ファイル名を変更
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイル名を変更します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        CurName         DB      "A:FILENAME.DAT", EOS
+        NewName         DB      "A:NEWNAME.DAT", EOS  
+        
+
+                        @DosRename CurName, NewName
+                        JC      DOSErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        -----------------------------------------------------------------
+
+機能番号 57 @DosSetTimeStamp : ファイル日時設定
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイル日時を変更します。変更はファイルがクローズした時点で反映されます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        FileName        DB      "A:FILENAME.DAT", EOS
+        Handle          DW      -1
+        Access          DW      DOSREADACCESS
+        NewDate         @FCBDate <2020-1980,11,7> ; 1980はオフセット
+        NewTime         @FCBTime <1,23,45>
+        
+
+                        @DosOpen FileName, Access, Handle  
+                        JC      DOSErr
+                        @DosSetTimeStamp Handle, NewDate, NewTime
+                        JC      DOSErr
+                        @DosClose Handle 
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+        -----------------------------------------------------------------
+
+機能番号 57 @DosGetTimeStamp : ファイル日時取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイル日時を取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_CONSOLE    EQU     0
+        INCL_FILE       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        BUFSIZ          EQU     6
+
+        FileName        DB      "FILENAME.DAT", EOS
+        Handle          DW      -1
+        Access          DW      DOSREADACCESS
+        CurDate         @FCBDate <0,0,0>
+        CurTime         @FCBTime <0,0,0>
+        Buffer          DB      BUFSUZ DUP(BLANK), DALLAR
+        MsgDate1        DB      " ファイル日付 ", DALLR
+        MsgDate2        DB      " 年 ", DALLR
+        MsgDate3        DB      " 月 ", DALLAR
+        MsgDate4        DB      " 日", CRCHAR, LFCHAR, DALLAR
+        MsgTime1        DB      " ファイル時刻 ", DALLAR
+        MsgTime2        DB      " 時 ", DALLAR
+        MsgTime3        DB      " 分 ", DALLAR
+        MsgTime4        DB      " 秒", CRCHAR, LFCHAR, DALLAR 
+
+                        @DosOpen FileName, Access, Handle  
+                        JC      DOSErr
+                        @DosGetTimeStamp Handle, CurDate, CurTime
+                        JC      DOSErr
+                        @DosClose Handle
+                        CALL    dispCurDate
+                        CALL    dispCurTime
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+
+        dispCurDate     PROC    NEAR
+                        @DosDispString MsgDate1
+                        MOV     AX, CurDate
+                        AND     AX, MASK @Year 
+                        MOV     CL, @Year
+                        SHR     AX, CL
+                        ADD     AX, 1980
+                        MOV     Code, AX
+                        CALL    uint2dec
+                        @DosDispString Buffer
+                        @DosDispString MsgDate2
+                        MOV     AX, CurDate
+                        AND     AX, MASK @Month
+                        MOV     CL, @Month
+                        SHR     AX, CL
+                        MOV     Code, AX
+                        CALL    uint2dec
+                        @DosDispString Buffer
+                        @DosDispString MsgDate3
+                        MOV     BYTE PTR [DI], AL
+                        MOV     AX, CurDate
+                        AND     AX, MASK @Day
+                        MOV     Code, AX
+                        CALL    uint2dec
+                        @DosDispString Buffer
+                        @DosDispString MsgDate4
+                        RET
+        dispCurDate     ENDP
+
+        dispCurTime     PROC    NEAR
+                        @DosDispString MsgTime1
+                        MOV     AX, CurTime
+                        AND     AX, MASK @Hours
+                        MOV     CL, @Hours
+                        SHR     AX, CL
+                        MOV     Code, AX
+                        CALL    uint2dec
+                        @DosDispString Buffer
+                        @DosDispString MsgTime2
+                        MOV     AX, CurTime
+                        AND     AX, MASK @Minutes
+                        MOV     CL, @Minutes
+                        SHR     AX, CL
+                        MOV     Code, AX
+                        CALL    uint2dec
+                        @DosDispString Buffer
+                        @DosDispString MsgTime3
+                        MOV     AX, CurTime
+                        AND     AX, MASK @Seconds
+                        MOV     CL, 2
+                        MUL     CL
+                        MOV     Code, AX
+                        CALL    uint2dec
+                        @DosDispString Buffer
+                        @DosDispString MsgTime4
+                        RET
+        dispCurTime     ENDP
+
+        ClrBuf          PROC    NEAR
+                        LEA     BX, CodeBuf
+                        MOV     DI, 0
+                        MOV     CX, CODEBUFSIZE
+        ClrBuf2:
+                        JCXZ    ClrBuf1
+                        MOV     BYTE PTR [BX+DI], BLANK
+                        INC     DI
+                        DEC     CX
+                        JMP     ClrBuf2
+        ClrBuf1:                
+                        RET
+        ClrBuf          ENDP
+        
+        uint2dec        PROC    NEAR
+                        CALL    ClrBuf
+        uint2dec1:
+                        LEA     BX, CodeBuf
+                        MOV     DI, CODEBUFSIZE-1
+                        MOV     AX, Code
+                        MOV     CX, 10
+        uint2dec4:
+                        CMP     AX, 10
+                        JL      uint2dec3
+                        CWD     
+                        DIV     CX
+                        ADD     DL, '0'
+                        MOV     BYTE PTR [BX+DI], DL
+                        DEC     DI
+                        JMP     uint2dec4
+        uint2dec3:
+                        ADD     AL, '0'
+                        MOV     BYTE PTR [BX+DI], AL
+                        RET
+        uint2dec        ENDP
+
+        -----------------------------------------------------------------
+                
+MEMORY.MAC -- メモリー管理
+==========================
+
+機能番号 48 @DosAlloc : メモリー割り振り
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+メモリーブロックを割り振り取得します
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MEMORY     EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     6
+
+        ptrBlock        DW      -1
+        BlockSize       DW      4
+        MaxBlocks       DW      0
+
+                        @DosAlloc BlockSize, ptrBlock, MaxBlcoks
+                        JC      DOSErr
+                        
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        -----------------------------------------------------------------
+
+機能番号 49 @DosDealloc : メモリー解放
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+割り振られたメモリーブロックを解放します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MEMORY     EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     6
+
+        ptrBlock        DW      -1
+        BlockSize       DW      4
+        MaxBlocks       DW      0
+
+                        @DosAlloc BlockSize, ptrBlock, MaxBlcoks
+                        JC      DOSErr
+　　　　　　　　　　　　@DosDealloc ptrBlock,
+                        JC      DOSErr
+                        
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        -----------------------------------------------------------------
+
+機能番号 4A @DosSetblock : 割り振られたブロックの修正
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+割り振られたメモリーブロックを修正します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MEMORY     EQU     0
+        INCLUDE DOSCALLS.MAC
+
+        BUFSIZ          EQU     6
+
+        ptrBlock        DW      -1
+        BlockSize       DW      4
+        NewSize         DW      2                       
+        MaxBlocks       DW      0
+
+                        @DosSetblock ptrBlock, NewSize, MaxBlcoks
+                        JC      DOSErr
+                        
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        -----------------------------------------------------------------
+
+MISC.MAC -- ほかに分類できないさまざまな操作
+============================================
+
+機能番号 25 @DosSetIntVect : 割り込みベクトル設定
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+割り込みルーチンのベクトルを設定します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+
+
+        IntType         DB      0FFH
+        IntVect         DW      OFFSET INR
+                        DW      SEG INTR
+        
+
+                        @DosSetIntVect InitType, IntVect    
+                        JC      DOSErr
+                        
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        INTR            PROC    FAR
+                         :
+                         :
+                        IRET
+        INTR            ENDP
+
+        -----------------------------------------------------------------
+
+機能番号 2E @DosSetVerify : 検査スイッチ状態設定
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+検査スイッチを設定します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+
+                        @DosSetVerify
+
+        -----------------------------------------------------------------
+
+機能番号 2E @DosSetVerify : 検査スイッチ状態リセット
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+検査スイッチをリセットします。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+                        @DosResetVerify
+
+        -----------------------------------------------------------------
+
+機能番号 2E @DosVersion : DOSバージョン取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DOS のバージョンを取得します。
+Major には、バージョンの整数部、Minor には、バージョンの少数部が求まります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+
+
+        Major           DB      0
+        Minor           DB      0
+
+
+                        @DosVersion Major, Minor
+                
+        -----------------------------------------------------------------
+
+機能番号 33 @DosGetBreak : Breakスイッチ状態取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Breakスイッチの状態を取得します。Status には、Breakが ON の時には DOSON が、
+OFF の時には DOSOFF が返ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+        Status          DB      0
+
+
+                        @DosGetBreak Status
+                
+        -----------------------------------------------------------------
+
+機能番号 33 @DosSetBreak : Breakスイッチセット
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Breakスイッチをセットします。セット後の状況が Status に返ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+        Status          DB      0
+
+
+                        @DosSetBreak Status
+                
+        -----------------------------------------------------------------
+
+機能番号 33 @DosResetBreak : Breakスイッチリセット
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Breakスイッチをリセットします。リセット後の状況が Status に返ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+        Status          DB      0
+
+
+                        @DosResetBreak Status
+                
+        -----------------------------------------------------------------
+
+機能番号 33 @DosBootDrive : ブートドライブ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ブートドライブを取得します。DrvLtrには、ドライブ名が返ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_MISC        EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+        Msg             DB      "ブートドライブは "
+        DrvLtr          DB      BLANK
+                        DB      " です。", CRCHAR, LFCHAR, DALLAR
+
+
+                        @DosBootDrive DrvLtr 
+                        @DosDipsString Msg
+                
+        -----------------------------------------------------------------
+
+機能番号 35 @DosGetIntVect : 割り込みベクタ取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+割り込みベクタを取得します。IntTypeの割り込みベクトルが、IntVecに返ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCL_MISC       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+
+        IntType         DW      0FFH
+        IntVec          DW      -1
+                        DW      -1
+
+
+                        @DosGetIntVect IntType, IntVec
+                
+        -----------------------------------------------------------------
+
+機能番号 38 @DosGetCountryInfo : 国別情報取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+国別情報を、@DosCuntryInfo 型の構造体に取得します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC 
+        INCL_MISC       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+        cInfo           @DosCuntryInfo <>
+
+
+                        @DosGetCountryInfo cInfo
+                
+        -----------------------------------------------------------------
+
+機能番号 54 @DosVerifyStatus : Verify状況取得
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Verify状況を Status に取得します。 Verify が ON の時には DOSON が、
+Verifyが OFF の時には DOSOFFが返ります。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCL_MISC       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+        Status          DB      DOSOFF
+
+
+                        @DosVerifyStatus Status
+                
+        -----------------------------------------------------------------
+
+機能番号 62 @DosGetPSP : プログラム接頭部アドレス
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DOSプログラム接頭部のセグメント・アドレスを取得します。DOSプログラム接頭部の
+構造は、@DosPSP構造体に定義してあります。
+
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC 
+        INCL_MISC       EQU     0
+        INCLUDE DOSCALLS.MAC
+        INCLUDE DOSCALLS.DEF
+
+
+        SegPSP          DW      -1
+
+
+                        @DosGetPSP SegPSP
+        
+        -----------------------------------------------------------------
+
+PROCESS.MAC : プロセス制御
+==========================
+
+機能番号 4C @DosExit : リターンDOS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+DOSに制御を戻します。終了コードを返す事ができます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCL_MISC       EQU     0
+        INCLUDE DOSCALLS.MAC
+
+
+        RC              DB      0 
+
+
+                        @DosExit RC
+
+        -----------------------------------------------------------------
+
+応用ライブラリー説明
+====================
+
+FILELIB.MAC -- ファイル操作
+===========================
+ファイルのオープン、クローズ、読み書きを行います。
+
+@open : ファイルのオープン
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイルをオープンし、ファイルハンドルを返します。FileAccessには、
+
+        FL_READ 
+        FL_WRITE 
+        FL_APPEND
+        FL_READWRITE    
+
+のいずれかを設定します。AXレジスタが FL_NOERROR でない場合は、AXに
+FILELIB のエラーコードが含まれています。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_READ
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@close : ファイルのクローズ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ファイルをクローズします。この後、ファイルハンドルは無効です。
+AXレジスタが FL_NOERROR でない場合は、AXに FILELIB のエラーコードが
+含まれています。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_READ
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@get : ブロック読だし
+~~~~~~~~~~~~~~~~~~~~~
+ブロック単位で読みだします。AXレジスタが FL_NOERROR でない場合は、AXに
+FILELIB のエラーコードが含まれています。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        BLOCKSIZE       EQU     40
+
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_READ
+        Block           DB      BLOCKSIZE DUP(?)
+        BSize           DW      BLOCKSIZE
+
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @get    FileHandle, Block, BSize
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@getchar : バイト読だし
+~~~~~~~~~~~~~~~~~~~~~~~
+一バイト単位で読みだします。AXレジスタが FL_NOERROR でない場合は、AXに
+FILELIB のエラーコードが含まれています。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_READ
+        Char            DB      BLANK
+
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @getchar FileHandle, Char
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@getline : 行読だし
+~~~~~~~~~~~~~~~~~~~
+一行単位で読みだします。行末まで読み取ります。改行文字は捨てられ、行の終りには
+EOS が置かれますので、実際に読み取れるバイト数は、バッファーの長さ-1です。読み
+取った文字数が返ります。一行がバッファーに入りきらない場合、バッファーの長さ-1
+までの文字が読み取られ、行末まで読飛ばし捨てられます。
+AXレジスタが FL_NOERROR でない場合は、AXに FILELIB のエラーコードが含まれて
+います。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        BUFSIZ          EQU     80
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_READ
+        LineBuffer      DB      BUFSIZ DUP(?), EOS
+        BufferSize      DW      $ - LineBuffer
+
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @getline FileHandle, LineBuffer, BufferSize
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@@put : ブロック書き出し
+~~~~~~~~~~~~~~~~~~~~~~~~
+ブロック単位で書き出します。書き出した文字数を、 BSize に返します。BSizeの
+値が小さかった場合、ディスクに空がなくなったことを意味します。
+AXレジスタが、 FL_NOERROR でない場合、FILELIB にエラーがあったことを意味し
+ます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        BUFSIZ          EQU     80
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_WRITE
+        BLOCK           DB      BUFSIZ DUP(?)
+        BSize           DW      BUFSIZ
+
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @put    FileHandle, Block, Bsize
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@@putchar : 文字単位書き出し
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+文字単位で書き出します。書き出せなかった場合ディスクに空がなくなったこと
+を意味します。
+AXレジスタが、 FL_NOERROR でない場合、FILELIB にエラーがあったことを意味し
+ます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_WRITE
+        Char            DB      BLANK
+
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        MOV     Char, "A"
+                        @putchar FileHandle, Char
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+@@putline : 行単位書き出し
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+一行単位で書き出します。行末コードが追加されます。
+を意味します。
+AXレジスタが、 FL_NOERROR でない場合、FILELIB にエラーがあったことを意味し
+ます。
+
+        サンプルコード
+        -----------------------------------------------------------------
+        INCLUDE CONSTANT.INC
+        INCL_FILELIB    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        LINESIZE        EQU     80
+
+        FileHandle      DW      0
+        FileName        DB      "FileName.DAT", EOS
+        FileAccess      DW      FL_WRITE
+        LineBuffer      DB      LINESIZE DUP(?), EOS
+
+
+                        @open   FileHandle, FileName, FileAccess
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        MOV     Char, "A"
+                        @putline FileHandle, LineBuffer
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+                        @close FileHandle
+                        JC      DOSErr
+                        CMP     AX, FL_NOERROR
+                        JNE     FILELIBErr
+
+
+        DOSErr:
+                        ; DOSエラーの処理
+
+
+        FILELIBErr:
+                        ; FILELIBエラー処理
+
+
+        -----------------------------------------------------------------
+
+GETARGS.MAC -- ファイル操作
+===========================
+コマンドラインの引数の数や引数を取得します。
+コマンドラインの引数を柔軟なルールで切り出す事が可能です。
+
+                                引数
+        引数の例                の数    切り出し結果　[]は目印
+        ----------------------- ------- ---------------------------------
+        abc def                 2       [abc] [def]
+        , ABC                   2       [] [ABC]
+           abc,                 2       [abc] []
+        ,                       2       [] []
+        abcde  <TAB> 123"DEF"   3       [abcde] [123] [DEF]
+        "abcde<TAB>123" DEF     2       [abcde<TAB>123] [DEF]
+        abc,,def                3       [abc] [] [def]
+        "abcd efg" 123          2       [abcd efg] [123]
+        "abd'efg" '1 3'         2       [abd'efg] [1 3]
+        123 "def                2       [123] [def        ] (行末まで)
+        ----------------------- ------- ---------------------------------
+
+@getArgc : 引数の数
+~~~~~~~~~~~~~~~~~~~
+引数の数を取得します。Argcが0の場合は、引数がなかった事を示します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_GETARGS    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+
+        Argc            DW      0
+
+
+                        @getArgc Argc
+                        
+        -----------------------------------------------------------------
+
+@getArgv : 引数を取得
+~~~~~~~~~~~~~~~~~~~~~
+引数を取得します。Argcは、1以上です。存在しない引数を指定した場合、Argvは
+ヌル文字になります。エラーにならない事に注意して下さい。Argvは、EOSで終端
+します。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_GETARGS    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+
+        BUFSIZ          EQU     20
+
+
+        Argc            DW      0
+        Argv            DB      BUFSIZ DUP(BLANK), EOS
+
+
+                        @getArgv Argc, Argv
+                        
+        -----------------------------------------------------------------
+
+GETENVS.MAC -- 環境変数操作
+===========================
+環境変数を取得します。
+
+@getenv : 環境変数を取得
+~~~~~~~~~~~~~~~~~~~~~~~~
+環境変数を取得します。環境変数の名前は、大文字で指定します。存在しない
+環境変数名が渡された場合、ヌル文字列を返します。エラーにはなりません。
+
+        サンプルコード
+        -----------------------------------------------------------------
+
+        INCLUDE CONSTANT.INC
+        INCL_GETENVS    EQU     0    
+        INCLUDE DosCalls.MAC
+        INCLUDE DosCalls.DEF
+
+        ENVNAMESIZE     EQU     20
+        ENVVALUESIZE    EQU     80
+
+
+        EnvName         DB      "DIRCMD", EOS
+        EnvValue        DB      ENVVALUESIZE DUP(ZLANK), EOS
+
+
+                        @getenv EnvName, EnvValue
+                
+        
+        -----------------------------------------------------------------
+
+
+DOS機能呼び出しマクロ・ライブラリー一覧
+=======================================
+
+名前            マクロライブラリー名    機能
+--------------- ----------------------- ---------------------------------
+@DosConInEcho   CONSOLE.MAC             キーボード入力                       
+@DosDispOut     CONSOLE.MAC             ディスプレー出力                     
+@DosAuxIn       CONSOLE.MAC             補助(RS-232Cポート)入力              
+@DosAuxOut      CONSOLE.MAC             補助(RS-232Cポート)出力              
+@DosPrnOut      CONSOLE.MAC             プリンター出力                       
+@DosDirectIn    CONSOLE.MAC             直接コンソール入力 
+@DosDirectOut   CONSOLE.MAC             直接コンソール出力       
+@DosDirectInWOEcho CONSOLE.MAC          エコーなしの直接コンソール入力           
+@DosConInWOEcho CONSOLE.MAC             エコーなしのコンソール入力                     
+@DosDispString  CONSOLE.MAC             ストリングの表示         
+@DosBufKbdIn    CONSOLE.MAC             バッファー付きキーボード入力
+@DosKbdStatus   CONSOLE.MAC             キーボード状態のチェック
+@DosClrKbdBuf   CONSOLE.MAC             キーボード・バッファーの消去     
+@DosGetDate     DATETIME.MAC            日付の読取り                      
+@DosSetDate     DATETIME.MAC            日付の設定                       
+@DosGetTime     DATETIME.MAC            時刻の読取り                     
+@DosSetTime     DATETIME.MAC            時刻の設定                      
+(未実装)        DEVICE.MAC                
+@DosMkDir       DIR.MAC                 ディレクトリーの作成(MKDIR)  
+@DosRmdir       DIR.MAC                 ディレクトリーの削除(RMDIR)
+@DosChdir       DIR.MAC                 現行ディレクトリーの変更(CHDIR)
+@DosCurdir      DIR.MAC                 現行ディレクトリー(Stat)
+@DosDiskReset   DISK.MAC                ディスク・リセット   
+@DosSelDisk     DISK.MAC                ディスクの選択       
+@DosCurDisk     DISK.MAC                現ディスク
+@DosDiskFree    DISK.MAC                ディスクの空空間を得る
+@DosSetDTA      FILE.MAC                ディスク転送アドレス(DTA)の設定          
+@DosGetDTA      FILE.MAC                ディスク転送アドレスの読とり             
+@DosCreat       FILE.MAC                ファイルの作成(Creat)                       
+@DosOpen        FILE.MAC                ファイルのオープン(Open)                    
+@DosClose       FILE.MAC                ファイルのクローズ(Close)                        
+@DosRead        FILE.MAC                ファイルまたは装置からの読取り(Read)             
+@DosWrite       FILE.MAC                ファイルまたは装置への書込み(Write)              
+@DosDelete      FILE.MAC                ファイルの削除(Unlink)                           
+@DosLSeek       FILE.MAC                ファイル読み書きポインターの移動(Lseek)          
+@DosChmod       FILE.MAC                ファイルの属性の変更(Chmod)                      
+@DosGetMod      FILE.MAC                ファイルの属性の読取り(Chmod)                    
+@DosDup         FILE.MAC                ファイル"ハンドル"の複写(Dup)                    
+@DosFindFirst   FILE.MAC                最初にマッチするファイルを見つける(FIND FIRST) 
+@DosFindNext    FILE.MAC                次にマッチするファイルを見つける               
+@DosRename      FILE.MAC                ファイル名変更                           
+@DosSetTimeStamp FILE.MAC               ファイル日時の読取り 
+@DosGetTimeStamp FILE.MAC               ファイル日時の書込み 
+@DosAlloc       MEMORY.MAC              メモリーの割り振り(Alloc)            
+@DosDealloc     MEMORY.MAC              割り振られたメモリーの開放(Dealloc)  
+@DosSetblock    MEMORY.MAC              割り振られたメモリーの修正(SetBlock) 
+@DosSetIntVect  MISC.MAC                割り込みベクトルの設定
+@DosSetVerify   MISC.MAC                検査(VERIFY)スイッチのオン   
+@DosResetVerify MISC.MAC                検査(VERIFY)スイッチのオフ   
+@DosVersion     MISC.MAC                DOSバージョンの読取り
+@DosGetBreak    MISC.MAC                BREAK状態のチェック          
+@DosSetBreak    MISC.MAC                BREAK=OFFの設定              
+@DosResetBreak  MISC.MAC                BREAK=ONの設定               
+@DosBootDrive   MISC.MAC                ブートドライブを得る         
+@DosGetIntVect  MISC.MAC                割り込みベクトルを得る
+@DosGetCountryInfo MISC.MAC             各国別情報
+@DosVerifyStatus MISC.MAC               VERIFY状態を得る
+@DosGetPSP      MISC.MAC                プログラム・セグメント・プリフィックス
+@DosExit        PROCESS.MAC             プログラムの終了(Exit)
+--------------- ----------------------- ---------------------------------
+
+
+DOS 機能呼び出しプログラム・ライブラリー一覧
+--------------------------------------------
+ 機能   
+ 番号   名前                   ファイル     機能
+------- ---------------------- ------------ -----------------------------------
+  00H                                       プログラムの終了
+  01H   @@DosConInEcho         CONSOLE.ASM  キーボード入力
+  02H   @@DosDispOut           CONSOLE.ASM  ディスプレー出力
+  03H   @@DosAuxIn             CONSOLE.ASM  補助(RS-232Cポート)入力
+  04H   @@DosAuxOut            CONSOLE.ASM  補助(RS-232Cポート)出力
+  05H   @@DosPrnOut            CONSOLE.ASM  プリンター出力
+  06H   @@DosDirectInEcho      CONSOLE.ASM  直接コンソール入力
+  07H   @@DosDirectIn          CONSOLE.ASM  エコーなしの直接コンソール入力
+  08H   @@DosConIn             CONSOLE.ASM  エコーなしのコンソール入力
+  09H   @@DosDispString        CONSOLE.ASM  ストリングの表示
+  0AH   @@DosBufKbdIn          CONSOLE.ASM  バッファー付きキーボード入力
+  0BH   @@DosKbdStatus         CONSOLE.ASM  キーボード状態のチェック
+  0CH   @@DosClrKbdBuf         CONSOLE.ASM  キーボード・バッファーの消去
+  0DH   @@DosDiskReset         DISK.ASM     ディスク・リセット
+  0EH   @@DosSelDisk           DISK.ASM     ディスクの選択
+  0FH                                       ファイルのオープン
+  10H                                       ファイルのクローズ
+  11H                                       最初の項目の探索
+  12H                                       次の項目の探索
+  13H                                       ファイルの削除
+  14H                                       順次読み取り
+  15H                                       順次書き込み
+  16H                                       ファイルの作成
+  17H                                       ファイル名の変更
+  18H                                       == DOSが内部的に使用 ==
+  19H   @@DosCurDisk           DISK.ASM     現ディスク
+  1AH   @@DosSetDTA            FILE.ASM     ディスク転送アドレス(DTA)の設定
+  1BH   @@DosAlcInfo           DISK.ASM     ファイル割りふりテーブル情報
+  1CH   @@DosAlcInfoDrv        DISK.ASM     指定ドライブのファイル割りふりテーブル情報
+  1DH                                       == DOSが内部的に使用 ==
+  1EH                                       == DOSが内部的に使用 ==
+  1FH                                       == DOSが内部的に使用 ==
+  20H                                       == DOSが内部的に使用 ==
+  21H                                       ランダム読取り
+  22H                                       ランダム書込み
+  23H                                       ファイル・サイズ
+  24H                                       ランダム・レコード・フィールドの設定
+  25H   @@DosSetIntVector      MISC.ASM     割り込みベクトルの設定
+  26H                                       新しいプログラム・セグメントの作成
+  27H                                       ランダム・ブロック読取り
+  28H                                       ランダム・ブロック書込み
+  29H                                       ファイル名解析
+  2AH   @@DosGetDate           DATETIME.ASM 日付の読取り
+  2BH   @@DosSetDate           DATETIME.ASM 日付の設定
+  2CH   @@DosGetTime           DATETIME.ASM 時刻の読取り
+  2DH   @@DosSetTime           DATETIME.ASM 時刻の設定
+  2EH   @@DosSetVerify         MISC.ASM     検査(VERIFY)スイッチのオン
+        @@DosResetVerify       MISC.ASM     検査(VERIFY)スイッチのオフ
+  2FH   @@DosGetDTA            FILE.ASM     ディスク転送アドレスの読とり
+  30H   @@DosVersion           MISC.ASM     DOSバージョンの読取り
+  31H   @@DosKeepProc          PROCESS.ASM  終了するがメモリー中にはとどまる(KEEP process)
+  32H                                       == DOSが内部的に使用 ==
+  33H   @@DosGetBreak          MISC.ASM     BREAK状態のチェック
+        @@DosSetBreak          MISC.ASM     BREAK=OFFの設定
+        @@DosResetBreak        MISC.ASM     BREAK=ONの設定 
+        @@DosBootDrive         MISC.ASM     ブートドライブを得る
+  34H                                       == DOSが内部的に使用 ==
+  35H   @@DosGetIntVector      MISC.ASM     割り込みベクトルを得る
+  36H   @@DosDiskFree          DISK.ASM     ディスクの空空間を得る
+  37H                                       == DOSが内部的に使用 ==
+  38H   @@DosGetCountryInfo    MISC.ASM     各国別情報
+  39H   @@DosMkdir             DIR.ASM      ディレクトリーの作成(MKDIR)
+  3AH   @@DosRmdir             DIR.ASM      ディレクトリーの削除(RMDIR)
+  3BH   @@DosChdir             DIR.ASM      現行ディレクトリーの変更(CHDIR)
+  3CH   @@DosCreat             FILE.ASM     ファイルの作成(Creat)                      
+  3DH   @@DosOpen              FILE.ASM     ファイルのオープン(Open)
+  3EH   @@DosClose             FILE.ASM     ファイルのクローズ(Close)
+  3FH   @@DosRead              FILE.ASM     ファイルまたは装置からの読取り(Read)
+  40H   @@DosWrite             FILE.ASM     ファイルまたは装置への書込み(Write)
+  41H   @@DosDelete            FILE.ASM     ファイルの削除(Unlink)
+  42H   @@DosLSeek             FILE.ASM     ファイル読み書きポインターの移動(Lseek)
+  43H   @@DosChmod             FILE.ASM     ファイルの属性の変更(Chmod)
+        @@DosGetmod            FILE.ASM     ファイルの属性の読取り(Chmod)
+  45H   @@DosDup               FILE.ASM     ファイル"ハンドル"の複写(Dup)              
+  47H   @@DosCurDir            DIR.ASM      現行ディレクトリー(Stat)
+  48H   @@DosAlloc             MEMORY.ASM   メモリーの割り振り(Alloc)
+  49H   @@DosDealloc           MEMORY.ASM   割り振られたメモリーの開放(Dealloc)
+  4AH   @@DosSetblock          MEMORY.ASM   割り振られたメモリーの修正(SetBlock)
+  4CH   @@DosExit              PROCESS.ASM  プログラムの終了(Exit)
+  4EH   @@DosFindFirst         FILE.ASM     最初にマッチするファイルを見つける(FIND FIRST)
+  4FH   @@DosFindNext          FILE.ASM     次にマッチするファイルを見つける
+  50H                                       == DOSが内部的に使用 ==
+  51H                                       == DOSが内部的に使用 ==
+  52H                                       == DOSが内部的に使用 ==
+  53H                                       == DOSが内部的に使用 ==
+  54H   @@DosVerifyStatus      MISC.ASM     VERIFY状態を得る
+  55H                                       == DOSが内部的に使用 ==
+  56H   @@DosRename            FILE.ASM     ファイル名変更
+  57H   @@DosGetFileTimestamp  FILE.ASM     ファイル日時の読取り
+        @@DosSetFileTimestamp  FILE.ASM     ファイル日時の書込み
+  62H   @@DosGetPSP            MISC.ASM     プログラム・セグメント・プリフィックス (PSP) アドレスの取得
+------- ---------------------- ------------ -----------------------------------
+
+応用ライブラリー一覧
+=======================================
+
+名前            マクロライブラリー名    機能
+--------------- ----------------------- ---------------------------------
+@Open           FILELIB.MAC             ファイル・オープン
+@Close          FILELIB.MAC             ファイル・クローズ
+@Get            FILELIB.MAC             ブロック単位で読取り
+@GetChar        FILELIB.MAC             文字単位で読取り
+@GetLine        FILELIB.MAC             行単位で読取り 行末コード削除
+@Put            FILELIB.MAC             ブロック単位で書きだし
+@PutChar        FILELIB.MAC             文字単位で書きだし
+@PutLine        FILELIB.MAC             行単位で書きだし 行末コード追加
+@argc           GETARGS.MAC             コマンドライン引数の個数取得
+@argv           GETARGS.MAC             コマンドライン引数取得
+@getEnv         GETENVS.MAC             環境変数検索/値取得
+--------------- ----------------------- ---------------------------------
+
+応用プログラム・ライブラリー一覧
+--------------------------------------------
+ 機能   
+ 番号   名前                   ファイル     機能
+------- ---------------------- ------------ -----------------------------------
+        @@Open                 FILELIB.ASM  ファイル・オープン
+        @@Close                FILELIB.ASM  ファイル・クローズ
+        @@Get                  FILELIB.ASM  ブロック単位で読取り
+        @@GetChar              FILELIB.ASM  文字単位で読取り
+        @@GetLine              FILELIB.ASM  行単位で読取り 行末コード削除
+        @@Put                  FILELIB.ASM  ブロック単位で書きだし
+        @@PutChar              FILELIB.ASM  文字単位で書きだし
+        @@PutLine              FILELIB.ASM  行単位で書きだし 行末コード追加
+        @@argc                 GETARGS.ASM  コマンドライン引数の個数取得
+        @@argv                 GETARGS.ASM  コマンドライン引数取得
+        @@getEnv               GETENVS.ASM  環境変数検索/値取得
+------- ---------------------- ------------ -----------------------------------
+

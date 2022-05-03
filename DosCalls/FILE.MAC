@@ -1,0 +1,226 @@
+SUBTTL  FILE.MAC -- DosCalls : File part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_FILE
+IFNDEF  @@FILE@@
+%OUT    FILE.MAC
+
+@DosSetDTA      MACRO   @newDTA                 ; Function 01AH
+                MOV     AX, OFFSET @newDTA
+                PUSH    AX
+                MOV     AX, SEG @newDTA
+                PUSH    AX
+                EXTRN   @@DosSetDTA: FAR
+                CALL    @@DosSetDTA
+                ENDM
+
+@DosGetDTA      MACRO   @curDTA                 ; Function 02FH
+                MOV     AX, OFFSET @curDTA
+                PUSH    AX
+                MOV     AX, SEG @curDTA
+                PUSH    AX
+                EXTRN   @@DosGetDTA: FAR
+                CALL    @@DosGetDTA
+                ENDM
+
+@DosCreat       MACRO   @name, @attribute, @handle ; Function 03CH
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                MOV     AX, OFFSET @attribute
+                PUSH    AX
+                MOV     AX, SEG @attribute
+                PUSH    AX
+                MOV     AX, OFFSET @handle   
+                PUSH    AX
+                MOV     AX, SEG @handle   
+                PUSH    AX
+                EXTRN   @@DosCreat: FAR
+                CALL    @@DosCreat
+                ENDM
+
+@DosOpen        MACRO   @name, @mode, @handle   ; Function 03DH
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                MOV     AX, OFFSET @mode
+                PUSH    AX
+                MOV     AX, SEG @mode
+                PUSH    AX
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                EXTRN   @@DosOpen: FAR
+                CALL    @@DosOpen 
+                ENDM
+
+@DosClose       MACRO   @handle                 ; Function 03EH
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                EXTRN   @@DosClose: FAR
+                CALL    @@DosClose 
+                ENDM
+
+@DosRead        MACRO   @handle, @buffer, @chars        ; Function 03FH
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @buffer
+                PUSH    AX
+                MOV     AX, SEG @buffer
+                PUSH    AX
+                MOV     AX, OFFSET @chars
+                PUSH    AX
+                MOV     AX, SEG @chars
+                PUSH    AX
+                EXTRN   @@DosRead: FAR
+                CALL    @@DosRead
+                ENDM
+
+@DosWrite       MACRO   @handle, @buffer, @chars        ; Function 040H
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @buffer
+                PUSH    AX
+                MOV     AX, SEG @buffer
+                PUSH    AX
+                MOV     AX, OFFSET @chars
+                PUSH    AX
+                MOV     AX, SEG @chars
+                PUSH    AX
+                EXTRN   @@DosWrite: FAR
+                CALL    @@DosWrite
+                ENDM
+
+@DosDelete      MACRO   @name           ; Function 041H
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                EXTRN   @@DosDelete: FAR
+                CALL    @@DosDelete
+                ENDM
+
+@DosLSeek       MACRO   @handle, @offset, @methods ; Function 042H
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @offset
+                PUSH    AX
+                MOV     AX, SEG @offset
+                PUSH    AX
+                MOV     AX, OFFSET @methods
+                PUSH    AX
+                MOV     AX, SEG @methods
+                PUSH    AX
+                EXTRN   @@DosLSeek: FAR
+                CALL    @@DosLSeek
+                ENDM
+
+@DosChmod       MACRO   @name, @mod                     ; Function 43H   
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                MOV     AX, OFFSET @mod
+                PUSH    AX
+                MOV     AX, SEG @mod
+                PUSH    AX
+                EXTRN   @@DosChmod: FAR
+                CALL    @@DosChmod
+                ENDM
+
+@DosGetMod      MACRO   @name, @mod                     ; Function 43H
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                MOV     AX, OFFSET @mod
+                PUSH    AX
+                MOV     AX, SEG @mod
+                PUSH    AX
+                EXTRN   @@DosGetmod: FAR
+                CALL    @@DosGetmod
+                ENDM
+
+@DosFindFirst   MACRO   @name, @attribute               ; Function 4EH
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                MOV     AX, OFFSET @attribute
+                PUSH    AX
+                MOV     AX, SEG @attribute
+                PUSH    AX
+                EXTRN   @@DosFindFirst: FAR
+                CALL    @@DosFindFirst
+                ENDM
+
+@DosFindNext    MACRO                                   ; Function 4FH
+                EXTRN   @@DosFindNext: FAR
+                CALL    @@DosFindNext
+                ENDM
+
+@DosRename      MACRO   @curName, @newName              ; Function 56H   
+                MOV     AX, OFFSET @curName
+                PUSH    AX
+                MOV     AX, SEG @curName
+                PUSH    AX
+                MOV     AX, OFFSET @newName
+                PUSH    AX
+                MOV     AX, SEG @newName
+                PUSH    AX
+                EXTRN   @@DosRename: FAR
+                CALL    @@DosRename
+                ENDM
+
+@DosSetTimeStamp MACRO  @handle, @date, @time           ; Function 57H
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @date
+                PUSH    AX
+                MOV     AX, SEG @date
+                PUSH    AX
+                MOV     AX, OFFSET @time
+                PUSH    AX
+                MOV     AX, SEG @time
+                PUSH    AX
+                EXTRN   @@DosSetTimeStamp: FAR
+                CALL    @@DosSetTimeStamp
+                ENDM
+
+@DosGetTimeStamp MACRO  @handle, @date, @time           ; Function 57H           
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @date
+                PUSH    AX
+                MOV     AX, SEG @date
+                PUSH    AX
+                MOV     AX, OFFSET @time
+                PUSH    AX
+                MOV     AX, SEG @time
+                PUSH    AX
+                EXTRN   @@DosGetTimeStamp: FAR
+                CALL    @@DosGetTimeStamp
+                ENDM
+                
+@@FILE@@        EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

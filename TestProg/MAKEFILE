@@ -1,0 +1,36 @@
+# makefile -- Build doscalls.lib
+# tools
+#       masm.exe -- IBM Macro Assembler/2 Version 1.00
+#       lib.exe  -- IBM Library Manager/2 Version 1.00 
+#       maketc.exe -- GNU MAKE 3.71
+
+.SUFFIXES:
+.SUFFIXES: .asm .obj .exe
+
+AS = masm.exe
+ASFLAGS = 
+LINK = link.exe
+INCDIR = ..\\DosCalls
+
+ASM = tstconio.asm tstdir.asm tstdisk.asm tstdttm.asm tstfile1.asm tstfile2.asm
+      
+OBJ = tstconio.obj tstdir.obj tstdisk.obj tstdttm.obj tstfile1.obj tstfile2.obj
+
+EXE = tstconio.exe tstdir.exe tstdisk.exe tstdttm.exe tstfile1.exe tstfile2.exe
+      
+LIB = ..\\DosCalls\\DosCalls.Lib
+INC = $(INCDIR)\\constant.inc    
+
+all : $(EXE)
+      
+%.exe : %.obj
+	$(LINK) $<,,NUL,$(LIB);
+
+%.obj : %.asm
+	$(AS) $(ASFLAGS) $<;
+
+.PHONY : clean
+
+clean :
+	-rm *.exe
+

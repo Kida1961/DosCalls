@@ -1,0 +1,81 @@
+@@CLOSE...........filelib           @@DOSALLOC........memory
+@@DOSAUXIN........console           @@DOSAUXOUT.......console
+@@DOSBOOTDRIVE....misc              @@DOSBUFKBDIN.....console
+@@DOSCHDIR........dir               @@DOSCHMOD........file
+@@DOSCLOSE........file              @@DOSCLRKBDBUF....console
+@@DOSCONINECHO....console           @@DOSCONINWOECHO..console
+@@DOSCREAT........file              @@DOSCURDIR.......dir
+@@DOSCURDISK......disk              @@DOSDEALLOC......memory
+@@DOSDELETE.......file              @@DOSDIRECTIN.....console
+@@DOSDIRECTINWOECHO..console        @@DOSDIRECTOUT....console
+@@DOSDISKFREE.....disk              @@DOSDISKRESET....disk
+@@DOSDISPOUT......console           @@DOSDISPSTRING...console
+@@DOSEXIT.........process           @@DOSFINDFIRST....file
+@@DOSFINDNEXT.....file              @@DOSGETBREAK.....misc
+@@DOSGETCOUNTRYINFO..misc           @@DOSGETDATE......datetime
+@@DOSGETDTA.......file              @@DOSGETINTVECT...misc
+@@DOSGETMOD.......file              @@DOSGETPSP.......misc
+@@DOSGETTIME......datetime          @@DOSGETTIMESTAMP..file
+@@DOSKBDSTATUS....console           @@DOSLSEEK........file
+@@DOSMKDIR........dir               @@DOSOPEN.........file
+@@DOSPRNOUT.......console           @@DOSREAD.........file
+@@DOSRENAME.......file              @@DOSRESETBREAK...misc
+@@DOSRESETVERIFY..misc              @@DOSRMDIR........dir
+@@DOSSELDISK......disk              @@DOSSETBLOCK.....memory
+@@DOSSETBREAK.....misc              @@DOSSETDATE......datetime
+@@DOSSETDTA.......file              @@DOSSETINTVECT...misc
+@@DOSSETTIME......datetime          @@DOSSETTIMESTAMP..file
+@@DOSSETVERIFY....misc              @@DOSVERIFYSTATUS..misc
+@@DOSVERSION......misc              @@DOSWRITE........file
+@@GET.............filelib           @@GETARGC.........getargs
+@@GETARGV.........getargs           @@GETCHAR.........filelib
+@@GETENV..........getenvs           @@GETLINE.........filelib
+@@OPEN............filelib           @@PUT.............filelib
+@@PUTCHAR.........filelib           @@PUTLINE.........filelib
+
+
+console           Offset: 00000010H  Code and data size: 51aH
+  @@DOSAUXIN        @@DOSAUXOUT       @@DOSBUFKBDIN     @@DOSCLRKBDBUF
+  @@DOSCONINECHO    @@DOSCONINWOECHO  @@DOSDIRECTIN     @@DOSDIRECTINWOECHO
+  @@DOSDIRECTOUT    @@DOSDISPOUT      @@DOSDISPSTRING   @@DOSKBDSTATUS
+  @@DOSPRNOUT     
+
+datetime          Offset: 00000a70H  Code and data size: 18cH
+  @@DOSGETDATE      @@DOSGETTIME      @@DOSSETDATE      @@DOSSETTIME
+
+device            Offset: 00000e50H  Code and data size: 14H
+
+dir               Offset: 00000ee0H  Code and data size: 1adH
+  @@DOSCHDIR        @@DOSCURDIR       @@DOSMKDIR        @@DOSRMDIR
+
+disk              Offset: 000012a0H  Code and data size: 1caH
+  @@DOSCURDISK      @@DOSDISKFREE     @@DOSDISKRESET    @@DOSSELDISK
+
+file              Offset: 00001680H  Code and data size: 565H
+  @@DOSCHMOD        @@DOSCLOSE        @@DOSCREAT        @@DOSDELETE
+  @@DOSFINDFIRST    @@DOSFINDNEXT     @@DOSGETDTA       @@DOSGETMOD
+  @@DOSGETTIMESTAMP                   @@DOSLSEEK        @@DOSOPEN
+  @@DOSREAD         @@DOSRENAME       @@DOSSETDTA       @@DOSSETTIMESTAMP
+  @@DOSWRITE      
+
+filelib           Offset: 00002200H  Code and data size: 10e9H
+  @@CLOSE           @@GET             @@GETCHAR         @@GETLINE
+  @@OPEN            @@PUT             @@PUTCHAR         @@PUTLINE
+
+memory            Offset: 00003a70H  Code and data size: 137H
+  @@DOSALLOC        @@DOSDEALLOC      @@DOSSETBLOCK   
+
+misc              Offset: 00003d80H  Code and data size: 446H
+  @@DOSBOOTDRIVE    @@DOSGETBREAK     @@DOSGETCOUNTRYINFO
+  @@DOSGETINTVECT   @@DOSGETPSP       @@DOSRESETBREAK   @@DOSRESETVERIFY
+  @@DOSSETBREAK     @@DOSSETINTVECT   @@DOSSETVERIFY    @@DOSVERIFYSTATUS
+  @@DOSVERSION    
+
+process           Offset: 00004760H  Code and data size: 2bH
+  @@DOSEXIT       
+
+getenvs           Offset: 00004850H  Code and data size: 14dH
+  @@GETENV        
+
+getargs           Offset: 00004b60H  Code and data size: 38aH
+  @@GETARGC         @@GETARGV       

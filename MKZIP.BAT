@@ -1,0 +1,10 @@
+@echo off
+erase DOSCALLS.ZIP
+ZIP DOSCALLS.ZIP .\README.TXT
+ZIP DOSCALLS.ZIP .\DosCalls\*.*
+ZIP DOSCALLS.ZIP .\TestProg\*.*
+ZIP DOSCALLS.ZIP .\Samples\*.*
+ZIP -T DOSCALLS.ZIP
+dir DOSCALLS.ZIP
+@echo on
+

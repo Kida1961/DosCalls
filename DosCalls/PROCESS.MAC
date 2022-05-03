@@ -1,0 +1,22 @@
+SUBTTL  PROCESS.MAC -- DosCalls : Process part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_PROCESS
+IFNDEF  @@PROCESS@@
+%OUT    PROCESS.MAC
+
+@DosExit        MACRO   @exitcode         ; Function 04CH
+                MOV     AX, OFFSET @exitcode
+                PUSH    AX
+                MOV     AX, SEG @exitcode
+                PUSH    AX
+                EXTRN   @@DosExit: FAR
+                CALL    @@DosExit
+                ENDM
+@@PROCESS@@     EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

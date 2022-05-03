@@ -1,0 +1,30 @@
+          DosCalls 
+  Macro Lib      Source Lib     Test/Sample
+=================================================================
+CONSOLE .MAC    CONSOLE .ASM    TSTCONIO.ASM     
+DATETIME.MAC    DATETIME.ASM    TSTDTTM .ASM     
+DEVICE  .MAC    DEVICE  .ASM     -- N.A. --
+DIR     .MAC    DIR     .ASM    TSTDIR  .ASM     
+DISK    .MAC    DISK    .ASM    TSTDISK .ASM     
+FILE    .MAC    FILE    .ASM    TSTFILE1.ASM     
+                                TSTFILE2.ASM     
+                                TSTFILE3.ASM     
+FILELIB .MAC    FILELIB .MAC    APPEND   ASM     
+                                DOSREAD  ASM     
+                                GET      ASM     
+                                GETCHAR  ASM     
+                                GETTEST  ASM     
+                                PUT      ASM     
+                                PUTCHAR  ASM     
+                                PUTLINE  ASM     
+                                PUTTEST  ASM     
+                                READLINE ASM     
+                                READWRIT ASM     
+                                WRITE    ASM     
+GETARGS .MAC    GETARGS .ASM    ARGS    .ASM     
+GETENVS .MAC    GETENVS .ASM    PRINTENV.ASM     
+MEMORY  .MAC    MEMORY  .ASM    
+MISC    .MAC    MISC    .ASM    TSTMISC .ASM     
+PROCESS .MAC    PROCESS .ASM    
+=================================================================
+

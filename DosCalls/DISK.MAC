@@ -1,0 +1,65 @@
+SUBTTL  DISK.MAC -- DosCalls : Disk part
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_DISK
+IFNDEF  @@DISK@@
+%OUT    DISK.MAC
+
+@DosDiskReset   MACRO                 ; Function 0DH
+                EXTRN   @@DosDiskReset: FAR
+                CALL    @@DosDiskReset
+                ENDM
+
+@DosSelDisk     MACRO   @drvLtr, @drives ; Function 0EH
+                MOV     AX, OFFSET @drvLtr
+                PUSH    AX
+                MOV     AX, SEG @drvLtr
+                PUSH    AX
+                MOV     AX, OFFSET @drives
+                PUSH    AX
+                MOV     AX, SEG @drives
+                PUSH    AX
+                EXTRN   @@DosSelDisk: FAR
+                CALL    @@DosSelDisk
+                ENDM
+
+@DosCurDisk     MACRO   @drvLtr ; Function 19H
+                MOV     AX, OFFSET @drvLtr
+                PUSH    AX
+                MOV     AX, SEG @drvLtr
+                PUSH    AX
+                EXTRN   @@DosCurDisk: FAR
+                CALL    @@DosCurDisk
+                ENDM
+
+@DosDiskFree    MACRO   @drvLtr, @cluster, @totalCluster, @bytePerSector, @sector ; Function 36H
+                MOV     AX, OFFSET @drvLtr
+                PUSH    AX
+                MOV     AX, SEG @drvLtr
+                PUSH    AX
+                MOV     AX, OFFSET @cluster
+                PUSH    AX
+                MOV     AX, SEG @cluster
+                PUSH    AX
+                MOV     AX, OFFSET @totalCluster
+                PUSH    AX
+                MOV     AX, SEG @totalCluster
+                PUSH    AX
+                MOV     AX, OFFSET @bytePerSector
+                PUSH    AX
+                MOV     AX, SEG @bytePerSector
+                PUSH    AX
+                MOV     AX, OFFSET @sector
+                PUSH    AX
+                MOV     AX, SEG @sector
+                PUSH    AX
+                EXTRN   @@DosDiskFree: FAR
+                CALL    @@DosDiskFree
+                ENDM
+@@DISK@@        EQU     0
+ENDIF
+ENDIF
+SUBTTL
+

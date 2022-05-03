@@ -1,0 +1,130 @@
+SUBTTL  FILELIB.INC -- FILELIB constants
+IFNDEF  @@CONSTANT@@
+INCLUDE CONSTANT.INC
+ENDIF
+
+IFDEF   INCL_FILELIB
+IFNDEF  @@FILELIB@@
+%OUT    FILELIB.MAC
+
+@Open           MACRO   @handle, @name, @access
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @name
+                PUSH    AX
+                MOV     AX, SEG @name
+                PUSH    AX
+                MOV     AX, OFFSET @access
+                PUSH    AX
+                MOV     AX, SEG @access 
+                PUSH    AX
+                EXTRN   @@Open: FAR
+                CALL    @@Open
+                ENDM
+
+@Close          MACRO   @handle
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                EXTRN   @@Close: FAR
+                CALL    @@Close
+                ENDM
+
+@get            MACRO   @handle, @buffer, @bytes
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @buffer
+                PUSH    AX
+                MOV     AX, SEG @buffer
+                PUSH    AX
+                MOV     AX, OFFSET @bytes 
+                PUSH    AX
+                MOV     AX, SEG @bytes
+                PUSH    AX
+                EXTRN   @@get: FAR
+                CALL    @@get
+                ENDM
+
+@getchar        MACRO   @handle, @char
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@getchar: FAR
+                CALL    @@getchar
+                ENDM
+
+@getline        MACRO   @handle, @line, @chars 
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @line
+                PUSH    AX
+                MOV     AX, SEG @line
+                PUSH    AX
+                MOV     AX, OFFSET @chars 
+                PUSH    AX
+                MOV     AX, SEG @chars
+                PUSH    AX
+                EXTRN   @@getline: FAR
+                CALL    @@getline
+                ENDM
+
+@put            MACRO   @handle, @buffer, @bytes
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @buffer
+                PUSH    AX
+                MOV     AX, SEG @buffer
+                PUSH    AX
+                MOV     AX, OFFSET @bytes 
+                PUSH    AX
+                MOV     AX, SEG @bytes
+                PUSH    AX
+                EXTRN   @@put: FAR
+                CALL    @@put
+                ENDM
+
+@putchar        MACRO   @handle, @char
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @char
+                PUSH    AX
+                MOV     AX, SEG @char
+                PUSH    AX
+                EXTRN   @@putchar: FAR
+                CALL    @@putchar
+                ENDM
+
+@putline        MACRO   @handle, @line
+                MOV     AX, OFFSET @handle
+                PUSH    AX
+                MOV     AX, SEG @handle
+                PUSH    AX
+                MOV     AX, OFFSET @line
+                PUSH    AX
+                MOV     AX, SEG @line
+                PUSH    AX
+                EXTRN   @@putline: FAR
+                CALL    @@putline
+                ENDM
+
+@@FILELIB@@     EQU     0
+ENDIF
+ENDIF
+SUBTTL
+
